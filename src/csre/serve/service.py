@@ -33,6 +33,7 @@ class ResultCache:
     def __init__(self, max_entries: int = 50_000, ttl_s: float = 900):
         self.max, self.ttl = max_entries, ttl_s
         self.data: OrderedDict = OrderedDict()
+        self.by_tag: dict = {}            # (locale, query key) -> cache keys, for O(1) invalidation
         self.hits = self.misses = self.evictions = 0
         self.lock = threading.Lock()
 
@@ -42,25 +43,41 @@ class ResultCache:
             if v is None or time.time() - v[0] > self.ttl:
                 if v is not None:
                     del self.data[key]
+                    self._untag(key)
                 self.misses += 1
                 return None
             self.data.move_to_end(key)
             self.hits += 1
             return v[1]
 
+    @staticmethod
+    def _tag(key):
+        return (key[0], key[3])            # (locale, normalised query)
+
     def put(self, key, value) -> None:
         with self.lock:
             self.data[key] = (time.time(), value)
             self.data.move_to_end(key)
+            self.by_tag.setdefault(self._tag(key), set()).add(key)
             while len(self.data) > self.max:
-                self.data.popitem(last=False)
+                old, _ = self.data.popitem(last=False)
+                self._untag(old)
                 self.evictions += 1
 
-    def invalidate(self, pred) -> int:
+    def _untag(self, key) -> None:
+        ks = self.by_tag.get(self._tag(key))
+        if ks is not None:
+            ks.discard(key)
+            if not ks:
+                del self.by_tag[self._tag(key)]
+
+    def invalidate(self, locale: str, query_key: str, pred=lambda k: True) -> int:
+        """Drop cached responses for one (locale, query) — constant time in the cache size."""
         with self.lock:
-            ks = [k for k in self.data if pred(k)]
+            ks = [k for k in self.by_tag.get((locale, query_key), ()) if pred(k)]
             for k in ks:
-                del self.data[k]
+                self.data.pop(k, None)
+                self._untag(k)
             return len(ks)
 
     def stats(self) -> dict:
@@ -298,7 +315,7 @@ class SearchService:
             if ev.get(f_):
                 rec[f_] = ev[f_]
         self._log(rec)
-        n = self.cache.invalidate(lambda k_: k_[0] == locale and k_[3] == key and k_[1] == "ltr_fb")
+        n = self.cache.invalidate(locale, key, lambda k_: k_[1] == "ltr_fb")
         return {"ok": True, "invalidated_cache_entries": n, "events_logged": self.fb_count}
 
     # ---------------------------------------------------------------- autocomplete

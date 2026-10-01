@@ -58,6 +58,24 @@ purchase-per-search rate and the relative lift to detect (`online_sim.z_power_n`
 provides both for each approach; the table is generated into `data/reports/simulated_ab.json`
 under `pilot_searches_per_arm_for_purchase`.
 
+## Running the pilot
+
+1. **Configure** `serve.experiment` in `configs/search.yaml`: set `enabled: true`, name the experiment, choose the
+   arms (default: control `bm25`, the incumbent keyword search; treatment `ltr`) and the split. Change `salt`
+   to re-randomise.
+2. **Send a stable shopper id** with every search: `GET /api/search?q=...&user_id=<first-party id>` without a
+   `method`. The service assigns the arm by hashing the id (`GET /api/experiment?user_id=...` shows it),
+   enforces the latency budget, and logs an `exposure` event with a `search_id`.
+3. **Send outcomes** to `POST /api/feedback` with the same `user_id`, `search_id`, `experiment` and `arm`
+   (the response's `experiment` block carries them): `click`, `cart`, `purchase`.
+4. **Analyse** with `csre analyze-experiment --target <name>` → `data/reports/experiment_<name>.md/json`:
+   sample-ratio check first (a failure invalidates the run), then user-level differences with bootstrap
+   CIs, CUPED when a pre-period success rate is supplied (`pre_success`), and the latency / fallback guardrails.
+
+`csre simulate-pilot` rehearses all four steps with simulated shoppers through the real serving path, so the
+instrumentation and analysis are tested before real traffic. Its effects come from the same labels as the
+offline evaluation and are not evidence of a real lift.
+
 ## Instrumentation already in place
 
 * `POST /api/feedback` logs impressions, clicks, carts, purchases and thumbs with position, method and model
