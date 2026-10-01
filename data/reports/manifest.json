@@ -118,10 +118,10 @@
       "category_complements.parquet": 284,
       "product_meta.parquet": 127041
     },
-    "bytes": 133304192,
-    "seconds": 16.83,
-    "rows_per_sec": 80833,
-    "finished_at": "2026-10-01T08:39:36"
+    "bytes": 133464069,
+    "seconds": 10.07,
+    "rows_per_sec": 135097,
+    "finished_at": "2026-10-01T10:20:57"
   },
   "demo_portable": {
     "stage": "demo_portable",
@@ -139,10 +139,10 @@
       "category_complements.parquet": 284,
       "product_meta.parquet": 36856
     },
-    "bytes": 21362218,
-    "seconds": 8.03,
-    "rows_per_sec": 40802,
-    "finished_at": "2026-10-01T08:39:44"
+    "bytes": 21451089,
+    "seconds": 5.63,
+    "rows_per_sec": 58196,
+    "finished_at": "2026-10-01T10:21:03"
   },
   "acquire": {
     "stage": "acquire",
@@ -185,11 +185,11 @@
   },
   "index_demo_portable": {
     "stage": "index_demo_portable",
-    "rows": 43304,
+    "rows": 43472,
     "corpus": "demo_portable",
-    "seconds": 6.22,
-    "rows_per_sec": 6962,
-    "finished_at": "2026-10-01T07:25:13"
+    "seconds": 15.45,
+    "rows_per_sec": 2813,
+    "finished_at": "2026-10-01T10:20:07"
   },
   "eval_demo_portable_test": {
     "stage": "eval_demo_portable_test",
@@ -199,5 +199,90 @@
     "seconds": 2.26,
     "rows_per_sec": 680,
     "finished_at": "2026-10-01T07:25:18"
+  },
+  "train_dense": {
+    "stage": "train_dense",
+    "rows": 1182477,
+    "version": "v2",
+    "dev": {
+      "epoch": 4,
+      "loss": 0.5678,
+      "steps": 4618,
+      "seconds": 194.1,
+      "workers": 4,
+      "dev_ndcg10": 0.8677
+    },
+    "seconds": 1001.2,
+    "rows_per_sec": 1181,
+    "finished_at": "2026-10-01T09:07:26"
+  },
+  "train_qcat": {
+    "stage": "train_qcat",
+    "rows": 88259,
+    "version": "v1",
+    "dev_accuracy": 0.7161,
+    "seconds": 20.09,
+    "rows_per_sec": 4393,
+    "finished_at": "2026-10-01T08:51:07"
+  },
+  "index_full": {
+    "stage": "index_full",
+    "rows": 1814924,
+    "corpus": "full",
+    "seconds": 588.15,
+    "rows_per_sec": 3085,
+    "finished_at": "2026-10-01T09:26:48"
+  },
+  "tune_hybrid": {
+    "stage": "tune_hybrid",
+    "rows": 4000,
+    "alpha": 0.35,
+    "version": "v1",
+    "seconds": 36.7,
+    "rows_per_sec": 108,
+    "finished_at": "2026-10-01T09:27:29"
+  },
+  "train_ltr": {
+    "stage": "train_ltr",
+    "rows": 158680,
+    "versions": {
+      "ltr": "v4",
+      "ltr_fb": "v3",
+      "esci_class": "v4"
+    },
+    "seconds": 84.03,
+    "rows_per_sec": 1888,
+    "finished_at": "2026-10-01T10:18:13"
+  },
+  "eval_full_test": {
+    "stage": "eval_full_test",
+    "rows": 30969,
+    "corpus": "full",
+    "split": "test",
+    "seconds": 355.31,
+    "rows_per_sec": 87,
+    "finished_at": "2026-10-01T11:57:22"
+  },
+  "index_demo": {
+    "stage": "index_demo",
+    "rows": 150819,
+    "corpus": "demo",
+    "seconds": 33.37,
+    "rows_per_sec": 4519,
+    "finished_at": "2026-10-01T11:08:30"
+  },
+  "simulate_ab": {
+    "stage": "simulate_ab",
+    "rows": 18000,
+    "seconds": 113.11,
+    "rows_per_sec": 159,
+    "finished_at": "2026-10-01T11:59:18"
+  },
+  "bench": {
+    "stage": "bench",
+    "rows": 1,
+    "seconds": 91.37,
+    "rows_per_sec": 0,
+    "finished_at": "2026-10-01T11:37:38"
   }
 }
