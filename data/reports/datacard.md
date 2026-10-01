@@ -3,12 +3,12 @@
 ## Catalog
 | locale | products | sparse_share | title_only_share | brand_share | has_measure | has_pack_count | has_audience | has_material | has_color | known_category_share | median_title_chars | median_desc_bullet_chars |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| us | 1215854 | 0.1928 | 0.1054 | 0.9373 | 0.3217 | 0.1923 | 0.27 | 0.4808 | 0.6034 | 0.7571 | 96.0 | 737.0 |
-| jp | 339059 | 0.3042 | 0.1783 | 0.8111 | 0.2803 | 0.156 | 0.1416 | 0.3246 | 0.4229 | 0.6117 | 53.0 | 170.0 |
-| es | 260011 | 0.2141 | 0.1063 | 0.9506 | 0.3492 | 0.1194 | 0.23 | 0.453 | 0.5939 | 0.6104 | 113.0 | 802.0 |
+| us | 1215854 | 0.1928 | 0.1054 | 0.9373 | 0.3217 | 0.1923 | 0.27 | 0.4808 | 0.6034 | 0.9382 | 96.0 | 737.0 |
+| jp | 339059 | 0.3042 | 0.1783 | 0.8111 | 0.2803 | 0.156 | 0.1416 | 0.3246 | 0.4229 | 0.8217 | 53.0 | 170.0 |
+| es | 260011 | 0.2141 | 0.1063 | 0.9506 | 0.3492 | 0.1194 | 0.23 | 0.453 | 0.5939 | 0.9078 | 113.0 | 802.0 |
 
 
-Category model: CV accuracy 0.769, macro-F1 0.670; at confidence >= 0.5: accuracy 0.902 on 70.4% of products (rest = Unknown). 4109 real labels + 57973 propagated weak labels.
+Category model: CV accuracy 0.864, macro-F1 0.830; at confidence >= 0.5: accuracy 0.945 on 75.7% of products (rest = Unknown). 150008 real labels + 0 propagated weak labels.
 
 
 ## Judgments
@@ -28,9 +28,9 @@ Category model: CV accuracy 0.769, macro-F1 0.670; at confidence >= 0.5: accurac
 ## Query slices (share of queries)
 | locale | queries | ambiguous | underspecified | multi_intent | negation | spec | brand | sparse_products | hard | all_exact |
 |---|---|---|---|---|---|---|---|---|---|---|
-| us | 97345 | 0.2622 | 0.1971 | 0.0919 | 0.037 | 0.0642 | 0.1753 | 0.1287 | 0.3066 | 0.2729 |
-| jp | 18127 | 0.309 | 0.2683 | 0.0606 | 0.139 | 0.0254 | 0.0434 | 0.2589 | 0.5741 | 0.1684 |
-| es | 15180 | 0.2657 | 0.2231 | 0.0617 | 0.1062 | 0.0553 | 0.1775 | 0.1756 | 0.5302 | 0.1887 |
+| us | 97345 | 0.2641 | 0.1971 | 0.0946 | 0.037 | 0.0642 | 0.1753 | 0.1287 | 0.3066 | 0.2729 |
+| jp | 18127 | 0.3193 | 0.2683 | 0.0793 | 0.139 | 0.0254 | 0.0434 | 0.2589 | 0.5741 | 0.1684 |
+| es | 15180 | 0.2771 | 0.2231 | 0.0819 | 0.1062 | 0.0553 | 0.1775 | 0.1756 | 0.5302 | 0.1887 |
 
 
 ## Product graph
@@ -44,19 +44,19 @@ Category model: CV accuracy 0.769, macro-F1 0.670; at confidence >= 0.5: accurac
 ## Simulated commerce attributes
 | locale | currency | price_p10 | price_median | price_p90 | avg_stars | median_ratings | in_stock_share | real_rows |
 |---|---|---|---|---|---|---|---|---|
-| es | EUR | 9.99 | 32.99 | 114.99 | 4.21 | 43.0 | 0.9396 | 576 |
-| jp | JPY | 820.0 | 2500.0 | 7990.0 | 4.12 | 60.0 | 0.9404 | 710 |
-| us | USD | 9.99 | 29.99 | 96.99 | 4.4 | 362.0 | 0.9399 | 2841 |
+| es | EUR | 8.99 | 29.99 | 130.99 | 4.21 | 145.0 | 0.9396 | 200847 |
+| jp | JPY | 736.0 | 2400.0 | 8580.0 | 4.07 | 84.0 | 0.9404 | 224903 |
+| us | USD | 8.99 | 24.99 | 87.95 | 4.41 | 496.0 | 0.9399 | 995492 |
 
 
 ## Simulated traffic
 | searches | sessions | users | queries_with_traffic | first_day | last_day | abandonment_rate | reformulation_share | search_ctr | search_add_to_cart_rate | search_conversion_rate |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 37709580 | 30000000 | 3463744 | 130652 | 2026-05-31 | 2026-07-31 | 0.3224 | 0.2044 | 0.6776 | 0.2286 | 0.1424 |
+| 37727855 | 30000000 | 3463744 | 130652 | 2026-05-31 | 2026-07-31 | 0.3236 | 0.2048 | 0.6764 | 0.2281 | 0.1421 |
 
 | impressions | ctr | explicit_feedback |
 |---|---|---|
-| 634358747 | 0.0629 | 645093 |
+| 634702424 | 0.0629 | 645632 |
 
 
 | traffic_bucket | queries | traffic_share | test_queries |
@@ -84,7 +84,7 @@ Category model: CV accuracy 0.769, macro-F1 0.670; at confidence >= 0.5: accurac
 ## Footprint
 | raw | processed | synthetic | scale |
 |---|---|---|---|
-| 1.17 GB | 1.51 GB | 5.39 GB | 4.22 GB |
+| 1.17 GB | 1.69 GB | 5.40 GB | 4.22 GB |
 
 
 ## Validation

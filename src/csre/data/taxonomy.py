@@ -30,37 +30,56 @@ from . import text as T
 log = get_logger("csre.taxonomy")
 
 DEPARTMENT_MAP: dict[str, list[str]] = {
-    "Clothing, Shoes & Jewelry": ["Clothing, Shoes & Jewelry", "Moda", "ファッション"],
+    "Clothing, Shoes & Jewelry": ["Clothing, Shoes & Jewelry", "Moda", "ファッション", "Shoe, Jewelry & Watch Accessories"],
     "Home & Kitchen": ["Home & Kitchen", "Hogar y cocina", "Kitchen & Dining", "Iluminación",
-                       "Lights & Lighting Accessories", "Instalación de baño y cocina", "Appliances",
+                       "Lights & Lighting Accessories", "Instalación de baño y cocina", "Appliances", "ホーム＆キッチン",
+                       "Dining & Entertaining", "Aspiración, limpieza y cuidado de suelos", "大型家電",
+                       "Heating, Cooling & Air Quality", "Productos para cocina y repostería",
                        "Large Appliances", "Grandes electrodomésticos", "Small Appliance Parts & Accessories"],
-    "Beauty & Personal Care": ["Beauty & Personal Care", "Belleza", "Beauty"],
+    "Beauty & Personal Care": ["Beauty & Personal Care", "Belleza", "Beauty", "ビューティー"],
     "Health & Household": ["Health & Household", "Salud y cuidado personal", "Health & Personal Care",
                            "ドラッグストア", "Suministros y equipamiento médico",
-                           "Sillas de ruedas, sillas de ruedas eléctricas, scooters para discapacitados y accesorios"],
-    "Sports & Outdoors": ["Sports & Outdoors", "Deportes y aire libre"],
+                           "Sillas de ruedas, sillas de ruedas eléctricas, scooters para discapacitados y accesorios",
+                           "Medical Supplies & Equipment", "Mobility & Daily Living Aids",
+                           "Cepillos de dientes y accesorios", "Ayudas para la movilidad y vida diaria",
+                           "Sports Care, Accessories & Compression", "Monitores de diagnóstico y salud",
+                           "Cuidado dental de bebés y niños", "Suministros médicos profesionales"],
+    "Sports & Outdoors": ["Sports & Outdoors", "Deportes y aire libre", "スポーツ＆アウトドア", "Hunting & Fishing",
+                          "Sports & Outdoor Recreation Accessories"],
     "Tools, Home Improvement & Garden": ["Tools & Home Improvement", "Bricolaje y herramientas", "DIY, Tools & Garden",
                                          "DIY・工具・ガーデン", "Power & Hand Tools", "Herramientas manuales y eléctricas",
-                                         "Patio, Lawn & Garden", "Jardín"],
+                                         "Patio, Lawn & Garden", "Jardín", "Materiales", "Power Tool Parts & Accessories",
+                                         "Outdoor Power Tools", "Grills & Outdoor Cooking", "Safety & Security",
+                                         "Prevención y seguridad", "Accesorios para herramientas eléctricas",
+                                         "Cortacéspedes y herramientas eléctricas de jardín", "Lighting Assemblies & Accessories",
+                                         "Herramientas eléctricas y de mano", "Replacement Parts"],
     "Electronics & Computers": ["Electronics", "Electrónica", "Computers", "Informática", "パソコン・周辺機器",
-                                "Cell Phones & Accessories", "Video Games", "Videojuegos"],
-    "Toys, Games & Hobbies": ["Toys & Games", "Juguetes y juegos", "おもちゃ", "Hobbies", "ホビー"],
+                                "Cell Phones & Accessories", "Video Games", "Videojuegos", "家電＆カメラ", "Software", "ゲーム", "PCソフト",
+                                "Consumer Electronics", "Amazon Devices & Accessories", "Dispositivos Amazon y Accesorios",
+                                "Car & Vehicle Electronics"],
+    "Toys, Games & Hobbies": ["Toys & Games", "Juguetes y juegos", "おもちゃ", "Hobbies", "ホビー",
+                              "Remote & App Controlled Vehicles & Parts", "Remote & App Controlled Vehicle Parts"],
     "Books & Media": ["Books", "Kindle Store", "Libros", "Tienda Kindle", "Japanese Books", "本", "Kindleストア",
                       "Foreign Language Books", "Audible Books & Originals", "Movies & TV", "Películas y TV", "DVD",
-                      "CDs & Vinyl", "Music", "ミュージック"],
+                      "CDs & Vinyl", "Music", "ミュージック", "CDs y vinilos", "Magazine Subscriptions",
+                      "Digital Music", "Audible Libros y Originales"],
     "Automotive": ["Automotive", "Coche y moto", "車＆バイク", "Motores y piezas del motor",
-                   "Heavy Duty & Commercial Vehicle Equipment"],
-    "Office Products": ["Office Products", "Oficina y papelería"],
+                   "Heavy Duty & Commercial Vehicle Equipment", "Piezas para coche", "Motorcycle & Powersports"],
+    "Office Products": ["Office Products", "Oficina y papelería", "Material de oficina", "文房具・オフィス用品",
+                        "Accesorios de escritorio y productos de oficina"],
     "Grocery & Gourmet Food": ["Grocery & Gourmet Food", "Alimentación y bebidas", "Food, Beverages & Alcohol",
-                               "食品・飲料・お酒"],
+                               "食品・飲料・お酒", "Lácteos, huevos y alternativas vegetales"],
     "Pet Supplies": ["Pet Supplies", "Productos para mascotas", "ペット用品"],
-    "Baby Products": ["Baby Products", "Bebé", "Baby"],
+    "Baby Products": ["Baby Products", "Bebé", "Baby", "ベビー＆マタニティ"],
     "Arts, Crafts & Sewing": ["Arts, Crafts & Sewing", "Handmade Products", "Productos Handmade",
-                              "Collectibles & Fine Art"],
+                              "Collectibles & Fine Art", "Costura y manualidades"],
     "Industrial & Scientific": ["Industrial & Scientific", "Industria, empresas y ciencia",
                                 "Productos de laboratorio y ciencias", "産業・研究開発用品",
-                                "Restaurant Appliances & Equipment"],
-    "Musical Instruments": ["Musical Instruments", "Instrumentos musicales"],
+                                "Restaurant Appliances & Equipment", "Food Service Equipment & Supplies", "Lab & Scientific Products",
+                                "Equipos y suministros agrícolas", "Artículos y equipo de servicio de comida",
+                                "Equipos e instrumental de laboratorio", "Janitorial & Sanitation Supplies",
+                                "Suministros de limpieza y sanitarios", "Productos de mantenimiento de instalaciones"],
+    "Musical Instruments": ["Musical Instruments", "Instrumentos musicales", "Instrument Accessories", "楽器・音響機器"],
 }
 RAW_TO_DEPT = {raw: dept for dept, raws in DEPARTMENT_MAP.items() for raw in raws}
 DEPARTMENTS = list(DEPARTMENT_MAP)
@@ -87,6 +106,50 @@ def _parse_number(s: str | None, locale: str) -> float | None:
         return None
 
 
+def _parse_stars(s: str | None) -> float | None:
+    """'4.4 out of 5 stars' / '4,6 de 5 estrellas' / '5つ星のうち4.3' -> 4.4 / 4.6 / 4.3."""
+    if not s:
+        return None
+    nums = re.findall(r"\d+(?:[.,]\d+)?", s)
+    if not nums:
+        return None
+    v = nums[-1] if "うち" in s else nums[0]
+    try:
+        x = float(v.replace(",", "."))
+    except ValueError:
+        return None
+    return x if 0 < x <= 5 else None
+
+
+def _parse_count(s: str | None) -> float | None:
+    """'1,116 ratings' / '53.170 valoraciones' -> integer count (separators differ by locale)."""
+    if not s:
+        return None
+    m = re.search(r"\d[\d.,]*", s)
+    return float(re.sub(r"[.,]", "", m.group(0))) if m else None
+
+
+def _positive(x: float | None) -> float | None:
+    return x if x is not None and x > 0 else None
+
+
+def _meta_row(r: dict) -> dict:
+    loc = r.get("locale")
+    cats = [c for c in (r.get("category") or []) if c]
+    top = cats[0] if cats else None
+    return {
+        "product_id": r["asin"], "locale": loc, "page_type": r.get("type"),
+        "category_path": " > ".join(cats) if cats else None,
+        "category_top_raw": top,
+        "department": RAW_TO_DEPT.get(top, "Other" if top else None),
+        "price": _positive(_parse_number(r.get("price"), loc)),   # "$0.00" pages are placeholders, not prices
+        "currency": _CURRENCY.get(loc),
+        "stars": _parse_stars(r.get("stars")),
+        "n_ratings": _parse_count(r.get("ratings")),
+        "template": r.get("template") or None,
+    }
+
+
 def load_esci_s_sample(cfg: Config) -> pl.DataFrame:
     """Parse the ESCI-S sample into a tidy frame of real category/price/rating metadata."""
     path = cfg.path("raw", "esci_s", "sample.json.gz")
@@ -96,22 +159,32 @@ def load_esci_s_sample(cfg: Config) -> pl.DataFrame:
             r = json.loads(line)
             if r.get("type") == "error":
                 continue
-            loc = r.get("locale")
-            cats = r.get("category") or []
-            top = cats[0] if cats else None
-            stars = _parse_number((r.get("stars") or "").split(" ")[0], loc if loc == "es" else "us")
-            rows.append({
-                "product_id": r["asin"], "locale": loc, "page_type": r.get("type"),
-                "category_path": " > ".join(cats) if cats else None,
-                "category_top_raw": top,
-                "department": RAW_TO_DEPT.get(top, "Other" if top else None),
-                "price": _parse_number(r.get("price"), loc),
-                "currency": _CURRENCY.get(loc),
-                "stars": stars if stars is not None and 0 < stars <= 5 else None,
-                "n_ratings": _parse_number((r.get("ratings") or "").split(" ")[0], loc if loc != "es" else "us"),
-                "template": r.get("template") or None,
-            })
+            rows.append(_meta_row(r))
     return pl.DataFrame(rows)
+
+
+def load_esci_s(cfg: Config) -> pl.DataFrame:
+    """Real product-page metadata: the full ESCI-S dump when present (1.48M pages), else the 4.4K sample.
+
+    Adds `image_url`, `category_leaf` and `brand_attr` when the full dump is used.
+    """
+    from .esci_s import parse_full_dump  # noqa: PLC0415
+    sample = load_esci_s_sample(cfg).with_columns(pl.lit("sample").alias("esci_s_source"))
+    raw_path = parse_full_dump(cfg)
+    if raw_path is None:
+        return sample
+    raw = pl.read_parquet(raw_path)
+    rows = [_meta_row({"asin": r["product_id"], "locale": r["locale"], "type": "product",
+                       "category": r["category_path"], "price": r["price_raw"], "stars": r["stars_raw"],
+                       "ratings": r["ratings_raw"], "template": r["template"]})
+            for r in raw.select("product_id", "locale", "category_path", "price_raw", "stars_raw", "ratings_raw",
+                                "template").iter_rows(named=True)]
+    full = pl.DataFrame(rows, schema=sample.drop("esci_s_source").schema).with_columns(
+        pl.lit("full").alias("esci_s_source"),
+        raw["image_url"], raw["category_path"].list.last().alias("category_leaf"), raw["brand_attr"],
+    )
+    extra = sample.join(full.select("product_id", "locale"), on=["product_id", "locale"], how="anti")
+    return pl.concat([full, extra], how="diagonal_relaxed")
 
 
 def _model_text(df: pl.DataFrame) -> pl.Series:
@@ -191,9 +264,23 @@ def _propagated_labels(cfg: Config, seeds: pl.DataFrame, max_per_query: int = 40
 
 def train_category_model(cfg: Config, propagate: bool = True) -> dict:
     with stage_timer(cfg, "taxonomy") as info:
-        meta = load_esci_s_sample(cfg)
+        meta = load_esci_s(cfg)
         write_parquet(meta, cfg.path("processed", "esci_s_meta.parquet"))
-        seeds = _seed_products(cfg, meta)
+        n_real = int(meta.filter(pl.col("department").is_not_null() & (pl.col("department") != "Other")).height)
+        # With the full dump most products have a real department; the classifier only fills the gaps, so it is
+        # trained on a capped stratified sample, and graph propagation (weak labels) is only used when real
+        # labels are scarce (the 4.4K sample).
+        max_seeds = int(cfg.get("taxonomy.max_seed_labels", 150_000))
+        if n_real > max_seeds:
+            meta_seed = meta.filter(pl.col("department").is_not_null() & (pl.col("department") != "Other")) \
+                .sample(fraction=1.0, shuffle=True, seed=cfg.seed) \
+                .with_columns(pl.col("product_id").cum_count().over("department").alias("_r"),
+                              (pl.col("product_id").count().over("department").cast(pl.Float64) * max_seeds / n_real).ceil().alias("_cap")) \
+                .filter(pl.col("_r") <= pl.col("_cap")).drop("_r", "_cap")
+        else:
+            meta_seed = meta
+        seeds = _seed_products(cfg, meta_seed)
+        propagate = propagate and n_real < int(cfg.get("taxonomy.propagate_below", 50_000))
         weak = _propagated_labels(cfg, seeds) if propagate else None
         log.info("seed labels: %d  propagated weak labels: %d", len(seeds), 0 if weak is None else len(weak))
 
@@ -234,6 +321,8 @@ def train_category_model(cfg: Config, propagate: bool = True) -> dict:
             curve.append({"threshold": t, "coverage": round(float(c.mean()), 4),
                           "accuracy": round(float(accuracy_score(y_seed[c], oof_pred[c])), 4) if c.any() else None})
         metrics = {
+            "esci_s_pages": int(meta.height),
+            "esci_s_real_departments": n_real,
             "n_seed_labels": int(len(seeds)),
             "n_weak_labels": 0 if weak is None else int(len(weak)),
             "propagation": propagate,
@@ -260,8 +349,17 @@ def train_category_model(cfg: Config, propagate: bool = True) -> dict:
         joblib.dump(model, model_path)
         cfg.path("reports").mkdir(parents=True, exist_ok=True)
         cfg.path("reports", "category_model_metrics.json").write_text(json.dumps(metrics, indent=2))
+        if "image_url" in meta.columns:   # display metadata for the storefront (real, from ESCI-S)
+            write_parquet(product_meta(meta), cfg.path("processed", "product_meta.parquet"))
         info.update(rows=len(y_all), accuracy=metrics["accuracy"], coverage=metrics["coverage_at_threshold"])
     return metrics
+
+
+def product_meta(meta: pl.DataFrame) -> pl.DataFrame:
+    """Storefront display metadata (real, from ESCI-S product pages)."""
+    return meta.filter(pl.col("product_id").is_not_null()).select(
+        (pl.col("locale") + ":" + pl.col("product_id")).alias("doc_id"), "locale", "category_path",
+        "category_leaf", "image_url", "brand_attr")
 
 
 class CategoryPredictor:

@@ -1,4 +1,4 @@
-"""Stage 0 — acquire raw data (Amazon ESCI + ESCI-S enrichment sample) with integrity checks."""
+"""Stage 0 — acquire raw data (Amazon ESCI + ESCI-S product-page metadata) with integrity checks."""
 from __future__ import annotations
 
 import hashlib
@@ -48,7 +48,14 @@ def acquire(cfg: Config, force: bool = False) -> dict:
             _download(cfg["esci_s"]["sample_url"], sample)
         out["esci_s_sample"] = {"path": str(sample.relative_to(cfg.root)), "bytes": sample.stat().st_size}
         full = raw / "esci_s" / "esci.json.zst"
+        if cfg.get("esci_s.download_full", True) and (force or not full.exists()):
+            try:
+                _download(cfg["esci_s"]["full_url"], full)
+            except Exception as e:  # noqa: BLE001 — optional enrichment: the pipeline runs on the sample alone
+                log.warning("full ESCI-S dump unavailable (%s); continuing with the 4.4K sample", e)
         out["esci_s_full_present"] = full.exists()
+        if full.exists():
+            out["esci_s_full"] = {"path": str(full.relative_to(cfg.root)), "bytes": full.stat().st_size}
         info["files"] = out
         info["bytes"] = sum(v["bytes"] for v in out.values() if isinstance(v, dict) and "bytes" in v)
     return out

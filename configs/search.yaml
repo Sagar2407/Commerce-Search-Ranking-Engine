@@ -1,0 +1,120 @@
+# Commerce Search & Ranking Engine — phase 2: retrieval, ranking, evaluation and serving.
+# Deep-merged on top of configs/data.yaml; override anything with `csre <stage> --set key=value`.
+
+paths:
+  indexes: data/indexes        # per-corpus BM25 / dense / ANN indexes
+  runs: data/runs              # per-query evaluation runs (parquet)
+  feedback: data/feedback      # online feedback events from the storefront / API
+
+search:
+  # Which corpus the engine indexes and serves:
+  #   full          all ESCI products (data/processed + data/synthetic)
+  #   demo          data/demo           (3K test queries, 151K products)
+  #   demo_portable data/demo_portable  (1.5K test queries, 43K products, download-sized)
+  corpus: full
+  locales: [us, es, jp]
+
+  bm25:
+    k1: 1.2
+    b: 0.75
+    fields:                    # field -> BM25 index; `text` is the retrieval field, `title` a ranking feature
+      text: doc_text
+      title: title
+    stem_plurals: true         # light, rule-based plural folding for us / es
+    jp_ngram: 2                # Japanese: overlapping character bigrams over CJK runs (no dictionary needed)
+
+  dense:
+    backend: hashed_bag        # hashed_bag (trained in-domain here) | sentence_transformers (needs HF access)
+    st_model: intfloat/multilingual-e5-small   # used only when backend = sentence_transformers
+    dim: 128
+    max_vocab: 1000000         # word + char n-gram features kept (by document frequency)
+    min_df: 3
+    char_ngrams: [3, 5]        # fastText-style subwords of "<word>" -> typo and morphology robustness
+    jp_char_ngrams: [1, 3]
+    doc_bullet_chars: 200      # product text = title + brand + colour + first bullet chars
+    train:
+      epochs: 4
+      batch_size: 256
+      lr: 0.08                 # Adagrad (sparse rows)
+      temperature: 0.05
+      hard_negatives: 2        # judged negatives of the same query per positive pair
+      negative_labels: [I, C, S]   # Substitutes are negatives for Exact positives (gain 0.1 vs 1.0)
+      typo_augment: 0.15       # share of training queries given one random character edit
+      workers: 4               # Hogwild processes sharing the embedding table
+      init_scale: 0.1
+    ann:
+      kind: hnsw               # hnsw | exact
+      hnsw_m: 32
+      ef_construction: 80
+      ef_search: 128
+      min_docs_for_ann: 200000 # smaller corpora use exact search (it's faster at that size)
+
+  hybrid:
+    candidates_per_retriever: 100
+    rrf_k: 60
+    alpha: 0.5                 # convex fusion weight on dense (z-normalised scores); tuned on dev by `csre tune`
+
+  ltr:
+    candidates: 200            # union of BM25 + dense candidates scored by the reranker
+    rerank_depth: 200          # fused candidates the reranker sees: the whole BM25 + dense union (bench: 100 -> 200
+                               # adds +0.0075 condensed nDCG@10 for < 1 ms)
+    fit_split: dev             # held out from the encoder / department model (stacking); "train" to compare
+    fit_fraction: 0.8          # of dev queries used to fit; the rest early-stops
+    max_train_queries: 60000
+    lightgbm:
+      objective: lambdarank
+      learning_rate: 0.05
+      num_leaves: 63
+      min_data_in_leaf: 50
+      feature_fraction: 0.8
+      bagging_fraction: 0.8
+      bagging_freq: 1
+      lambdarank_truncation_level: 20
+      num_boost_round: 600
+      early_stopping_rounds: 50
+    # ESCI gains on grades 0..3 (I, C, S, E) so LightGBM optimises the metric we report
+    label_gain: [0.0, 0.01, 0.1, 1.0]
+
+  spell:                       # catalog-vocabulary spelling correction (symmetric delete, 1 edit)
+    enabled: true
+    mode: expand               # expand (keep the word, add the suggestion) | replace
+    min_df: 5                  # a suggestion must appear in at least this many products
+    max_df: 3                  # only words seen in fewer products than this are corrected
+    min_ratio: 20              # ... and the suggestion must be this many times more frequent
+    rare_df: 50                # also correct words in up to this many products (sellers misspell too) ...
+    strong_ratio: 200          # ... when a one-edit neighbour is this many times more frequent
+
+  query_category:
+    min_confidence: 0.35       # below this a query is shown category chips ("did you mean ...")
+
+eval:
+  split: test
+  k: 10
+  recall_k: 100
+  # Full-catalog retrieval is evaluated on a stratified query sample per locale (all judged queries are
+  # used in rerank mode). Set to 0 for every query.
+  retrieval_queries_per_locale: 3000
+  bootstrap: 1000              # paired bootstrap resamples for confidence intervals on deltas
+  latency_queries: 500         # queries timed single-threaded per method
+  robustness_requests: 5000    # replay variants (typo / drop / reorder / modifier) re-scored against parent qrels
+  slices: [slice_ambiguous, slice_underspecified, slice_multi_intent, slice_negation, slice_spec, slice_brand,
+           slice_sparse_products, slice_hard]
+
+cost:
+  # Serving cost model (assumption, edit to your cloud): on-demand compute only, single-threaded workers.
+  instance: c7i.xlarge
+  vcpus: 4
+  ram_gb: 8
+  usd_per_hour: 0.1785
+  target_utilisation: 0.6
+
+serve:
+  host: 0.0.0.0
+  port: 8000
+  default_method: ltr
+  latency_budget_ms: 150       # stages after BM25 are skipped (fallback) when the budget is exhausted
+  cache:
+    max_entries: 50000
+    ttl_s: 900
+  explain_top_n: 3             # feature contributions shown per result
+  feedback_flush_every: 50

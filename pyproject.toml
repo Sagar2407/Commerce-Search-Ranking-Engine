@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "csre"
-version = "0.1.0"
+version = "0.2.0"
 description = "Commerce Search & Ranking Engine: measurable product discovery on Amazon ESCI"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -13,13 +13,21 @@ dependencies = [
   "polars>=1.10",
   "pyarrow>=16",
   "numpy>=1.26",
+  "scipy>=1.11",
   "scikit-learn>=1.4",
   "pyyaml>=6",
   "joblib>=1.3",
+  "zstandard>=0.22",       # full ESCI-S dump
+  "lightgbm>=4.3",         # LambdaMART rerankers, E/S/C/I classifier
+  "faiss-cpu>=1.8",        # HNSW vector search
+  "fastapi>=0.110",
+  "uvicorn>=0.29",
+  "threadpoolctl>=3.2",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8"]
+dev = ["pytest>=8", "httpx>=0.27"]
+pretrained = ["sentence-transformers>=3.0"]   # optional dense backend (needs Hugging Face access)
 
 [project.scripts]
 csre = "csre.cli:main"
@@ -27,5 +35,10 @@ csre = "csre.cli:main"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+"csre.serve" = ["static/*.html"]
+"csre.data" = ["*.html"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning"]

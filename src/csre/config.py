@@ -10,6 +10,8 @@ from typing import Any
 import yaml
 
 DEFAULT_CONFIG = "configs/data.yaml"
+# Merged on top of the default config, in order (phase 2: retrieval, ranking, evaluation, serving).
+EXTRA_CONFIGS = ["configs/search.yaml"]
 
 
 def repo_root() -> Path:
@@ -57,11 +59,23 @@ class Config:
         return int(self.raw["seed"])
 
 
+def _deep_merge(base: dict, extra: dict) -> dict:
+    out = copy.deepcopy(base)
+    for k, v in extra.items():
+        out[k] = _deep_merge(out[k], v) if isinstance(v, dict) and isinstance(out.get(k), dict) else copy.deepcopy(v)
+    return out
+
+
 def load_config(path: str | None = None, overrides: list[str] | None = None) -> Config:
     root = repo_root()
     cfg_path = Path(path) if path else root / DEFAULT_CONFIG
     with open(cfg_path) as f:
         raw = yaml.safe_load(f)
+    if path is None:
+        for extra in EXTRA_CONFIGS:
+            if (root / extra).exists():
+                with open(root / extra) as f:
+                    raw = _deep_merge(raw, yaml.safe_load(f) or {})
     raw = copy.deepcopy(raw)
     for ov in overrides or []:
         k, v = ov.split("=", 1)

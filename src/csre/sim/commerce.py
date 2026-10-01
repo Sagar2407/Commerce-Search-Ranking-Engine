@@ -103,7 +103,7 @@ def build_commerce(cfg: Config) -> dict:
         # overwrite with real values where the ESCI-S sample has them
         real = meta.select(
             (pl.col("locale") + ":" + pl.col("product_id")).alias("doc_id"),
-            pl.col("price").alias("r_price"), pl.col("stars").alias("r_stars"), pl.col("n_ratings").alias("r_nr"),
+            pl.when(pl.col("price") > 0).then(pl.col("price")).alias("r_price"), pl.col("stars").alias("r_stars"), pl.col("n_ratings").alias("r_nr"),
         )
         out = out.join(real, on="doc_id", how="left").with_columns(
             pl.coalesce("r_price", "price").alias("price"),
