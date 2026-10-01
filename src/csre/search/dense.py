@@ -401,12 +401,26 @@ class VectorIndex:
             log.info("HNSW built over %d vectors in %.0fs", len(emb), time.time() - t)
         return cls(emb, ann, ef_search)
 
-    def search(self, q: np.ndarray, k: int = 100, exact: bool = False) -> tuple[np.ndarray, np.ndarray]:
+    def search(self, q: np.ndarray, k: int = 100, exact: bool = False, allowed: np.ndarray | None = None
+               ) -> tuple[np.ndarray, np.ndarray]:
+        """Top-k by inner product. `allowed` (bool mask) restricts results: HNSW oversamples and post-filters, and
+        falls back to exact masked search when the filter is too selective to fill k."""
         if self.ann is not None and not exact:
-            s, i = self.ann.search(q[None, :].astype(np.float32), k)
+            kk = k if allowed is None else min(len(self.emb), k * 8)
+            s, i = self.ann.search(q[None, :].astype(np.float32), kk)
             ok = i[0] >= 0
-            return i[0][ok].astype(np.int64), s[0][ok].astype(np.float32)
+            ids, sc = i[0][ok].astype(np.int64), s[0][ok].astype(np.float32)
+            if allowed is None:
+                return ids, sc
+            keep = allowed[ids]
+            if keep.sum() >= k:
+                return ids[keep][:k], sc[keep][:k]
         s = self.emb @ q
+        if allowed is not None:
+            s = np.where(allowed, s, -np.inf).astype(np.float32)
+            k = min(k, int(allowed.sum()))
+            if k == 0:
+                return np.zeros(0, np.int64), np.zeros(0, np.float32)
         k = min(k, len(s))
         top = np.argpartition(-s, k - 1)[:k]
         order = np.lexsort((top, -s[top]))

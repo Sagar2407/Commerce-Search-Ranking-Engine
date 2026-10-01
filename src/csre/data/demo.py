@@ -60,7 +60,10 @@ def _build(cfg: Config, D: dict, out, drop_columns: list[str], replay_rows: int,
             "product_edges.parquet": f"""SELECT e.* FROM '{P('graph', 'product_edges.parquet')}' e
                                          WHERE e.src_doc IN (SELECT doc_id FROM dd) AND e.dst_doc IN (SELECT doc_id FROM dd)
                                          {"AND e.relation IN (" + ", ".join(f"'{r}'" for r in relations) + ")" if relations else ""}""",
-            "related_queries.parquet": f"SELECT r.* FROM '{P('graph', 'related_queries.parquet')}' r SEMI JOIN dq USING (query_id)",
+            # related query text travels with the pair: most related queries are outside the demo's query subset
+            "related_queries.parquet": f"""SELECT r.*, q.query AS related_query
+                                          FROM '{P('graph', 'related_queries.parquet')}' r SEMI JOIN dq USING (query_id)
+                                          JOIN '{P('queries.parquet')}' q ON q.query_id = r.related_query_id""",
             "query_doc_stats.parquet": f"SELECT s.* FROM '{S('logs', 'query_doc_stats.parquet')}' s SEMI JOIN dq USING (query_id)",
             "query_popularity.parquet": f"SELECT p.* FROM '{S('query_popularity.parquet')}' p SEMI JOIN dq USING (query_id)",
             "replay_sample.parquet": f"SELECT * FROM '{S('replay', 'requests.parquet')}' WHERE locale = '{D['locale']}' LIMIT {replay_rows}",

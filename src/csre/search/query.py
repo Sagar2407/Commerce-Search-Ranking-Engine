@@ -7,6 +7,7 @@ features a ranker was trained on are the features it sees in production.
 from __future__ import annotations
 
 import json
+import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -87,11 +88,20 @@ class QueryParser:
         self.brands = BrandMatcher(brand_patterns)
         self.cache: dict[tuple[str, str], ParsedQuery] = {}
         self.max_cache = max_cache
+        self.owner_pid = os.getpid()
+        self.fallbacks = 0
 
     def parse(self, text: str, locale: str) -> ParsedQuery:
         hit = self.cache.get((text, locale))
         if hit is not None:
             return hit
+        if os.getpid() != self.owner_pid:
+            # forked worker + cache miss: never run Polars here (it can deadlock); degrade to no attributes
+            self.fallbacks += 1
+            norm = A.normalize(text)
+            return ParsedQuery(text=text, locale=locale, norm=norm, key=A.query_key(text),
+                               brands=self.brands(norm, locale), n_units=len(A.units(text)),
+                               has_digit=any(c.isdigit() for c in text))
         p = self.parse_many([text], [locale])[0]
         if len(self.cache) >= self.max_cache:
             self.cache.pop(next(iter(self.cache)))

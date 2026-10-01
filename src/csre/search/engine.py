@@ -266,6 +266,29 @@ class Engine:
                 out.append("ltr_fb")
         return out
 
+    # ---------------------------------------------------------------- filters (facets)
+    def filter_mask(self, locale: str, filters: dict) -> np.ndarray | None:
+        """Boolean mask over a market's products for {department, in_stock, max_price}; cached per filter set."""
+        key = (locale, tuple(sorted((k, v) for k, v in filters.items() if v not in (None, "", False))))
+        if len(key[1]) == 0:
+            return None
+        cache = self.__dict__.setdefault("_mask_cache", {})
+        if key in cache:
+            return cache[key]
+        D = self.idx[locale].docs
+        m = np.ones(D.n, bool)
+        f = dict(key[1])
+        if "department" in f:
+            m &= D.category == D.dept_index.get(f["department"], -9)
+        if f.get("in_stock"):
+            m &= D.in_stock > 0.5
+        if "max_price" in f:
+            m &= np.nan_to_num(np.expm1(D.log_price), nan=np.inf) <= float(f["max_price"])
+        if len(cache) > 256:
+            cache.clear()
+        cache[key] = m
+        return m
+
     # ---------------------------------------------------------------- query rewriting
     def rewrite(self, query: str, locale: str) -> tuple[str, list[tuple[str, str]]]:
         sp = self.spellers.get(locale)
@@ -313,7 +336,7 @@ class Engine:
 
     def _search(self, query: str, locale: str, method: str = "ltr", k: int = 10, budget_ms: float | None = None,
                n_candidates: int | None = None, rerank_depth: int | None = None, exact: bool = False,
-               rescue: bool = False) -> SearchResponse:
+               rescue: bool = False, filters: dict | None = None) -> SearchResponse:
         """Full-catalog retrieval with graceful degradation to cheaper methods.
 
         rescue: when keyword retrieval finds nothing, serve semantic results instead (production default path;
@@ -327,6 +350,7 @@ class Engine:
         query, corrections = self.rewrite(query, locale)
         if corrections:
             T["spell"] = (time.perf_counter() - t0) * 1e3
+        allowed = self.filter_mask(locale, filters) if filters else None
         H = self.cfg.get("search.hybrid")
         n_cand = n_candidates or int(H["candidates_per_retriever"])
         depth = rerank_depth or int(self.cfg.get("search.ltr.rerank_depth", 100))
@@ -350,7 +374,7 @@ class Engine:
         b_rows, b_sc = np.zeros(0, np.int64), np.zeros(0, np.float32)
         if served != "dense":
             t = time.perf_counter()
-            b_rows, b_sc = ix.bm25_text.search(query, n_cand if served != "bm25" else max(k, 1))
+            b_rows, b_sc = ix.bm25_text.search(query, n_cand if served != "bm25" else max(k, 1), allowed=allowed)
             T["bm25"] = (time.perf_counter() - t) * 1e3
         if served == "bm25":
             if rescue and len(b_rows) == 0 and self.encoder is not None and ix.vectors is not None:
@@ -358,7 +382,7 @@ class Engine:
                 ctx = ctx or self.context(query, locale, T, full=False)
                 if ctx.qvec is not None and np.any(ctx.qvec):
                     t = time.perf_counter()
-                    d_rows, d_sc = ix.vectors.search(ctx.qvec, k, exact)
+                    d_rows, d_sc = ix.vectors.search(ctx.qvec, k, exact, allowed)
                     T["dense"] = (time.perf_counter() - t) * 1e3
                     return SearchResponse(query, locale, method, "dense", d_rows[:k], d_sc[:k], T,
                                           "no keyword matches: served by semantic retrieval", dict(self.versions),
@@ -371,7 +395,7 @@ class Engine:
                                   "latency budget exhausted after keyword stage", dict(self.versions), len(b_rows), ctx)
         # ---- dense
         t = time.perf_counter()
-        d_rows, d_sc = ix.vectors.search(ctx.qvec, n_cand if served != "dense" else k, exact)
+        d_rows, d_sc = ix.vectors.search(ctx.qvec, n_cand if served != "dense" else k, exact, allowed)
         T["dense"] = (time.perf_counter() - t) * 1e3
         if served == "dense":
             return SearchResponse(query, locale, method, "dense", d_rows[:k], d_sc[:k], T, reason, dict(self.versions),

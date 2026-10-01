@@ -104,6 +104,26 @@ class SearchService:
         self._judged = {qid: dict(zip(g["doc_id"].to_list(), zip(g["esci_label"].to_list(), g["gain"].to_list())))
                         for (qid,), g in j.join(self.queries.select("query_id"), on="query_id", how="semi")
                         .group_by(["query_id"])}
+        # autocomplete: dataset queries ranked by (simulated) traffic, searched by normalised prefix
+        sq = self.queries.select("query_id", "query", "locale",
+                                 pl.col("traffic_share").fill_null(0.0) if "traffic_share" in self.queries.columns
+                                 else pl.lit(0.0).alias("traffic_share"))
+        self._suggest = {}
+        for (loc,), g in sq.group_by(["locale"]):
+            norm = [A.normalize(x) for x in g["query"].to_list()]
+            order = np.argsort(norm, kind="stable")
+            self._suggest[loc] = ([norm[i] for i in order], g["query"].to_numpy()[order],
+                                  g["traffic_share"].to_numpy()[order])
+        rel = ds.related_queries()
+        self._related = {}
+        if rel is not None:
+            qtext = dict(zip(self.queries["query_id"].to_list(), self.queries["query"].to_list()))
+            if "related_query" not in rel.columns:      # full corpus: look the text up
+                rel = rel.join(ds.queries().select(pl.col("query_id").alias("related_query_id"),
+                                                   pl.col("query").alias("related_query")), on="related_query_id")
+            for (qid,), g in rel.sort("jaccard", descending=True).group_by(["query_id"], maintain_order=True):
+                if qid in qtext:
+                    self._related[qid] = g["related_query"].head(6).to_list()
         self.edges = ds.edges()
         self.cat_comp = ds.category_complements()
         self.request_log: list[dict] = []
@@ -128,11 +148,13 @@ class SearchService:
 
     # ---------------------------------------------------------------- search
     def search(self, query: str, locale: str, method: str | None = None, k: int = 10, explain: bool = True,
-               use_cache: bool = True, budget_ms: float | None = None, rescue: bool | None = None) -> dict:
+               use_cache: bool = True, budget_ms: float | None = None, rescue: bool | None = None,
+               filters: dict | None = None) -> dict:
         method = method or self.default_method
         if method not in METHODS:
             raise ValueError(f"unknown method {method!r}")
-        key = (locale, method, k, A.query_key(query), explain, budget_ms,
+        filters = {f: v for f, v in (filters or {}).items() if v not in (None, "", False)}
+        key = (locale, method, k, A.query_key(query), explain, budget_ms, tuple(sorted(filters.items())),
                tuple(sorted(self.engine.versions.items())))
         t0 = time.perf_counter()
         if use_cache:
@@ -143,7 +165,8 @@ class SearchService:
                 out["query"] = query
                 return out
         rescue = (method == self.default_method) if rescue is None else rescue
-        resp = self.engine.search(query, locale, method, k=k, budget_ms=budget_ms, rescue=rescue)
+        resp = self.engine.search(query, locale, method, k=k, budget_ms=budget_ms, rescue=rescue,
+                                  filters=filters or None)
         products = self.engine.result_rows(locale, resp.rows)
         t1 = time.perf_counter()
         # cheaper paths skip query understanding; explanations, badges and the understanding panel need it
@@ -172,6 +195,7 @@ class SearchService:
             "versions": resp.versions, "understanding": self.understanding(ctx, locale),
             "judged_query_id": qid, "results": results,
             "corrected_query": resp.rewritten, "corrections": [{"from": a, "to": b} for a, b in resp.corrections],
+            "filters": filters, "related_searches": self._related.get(qid, []) if qid is not None else [],
         }
         if judged:
             rel = {self.engine.idx[locale].rows([d])[0]: (g, lab) for d, (lab, g) in judged.items()}
@@ -245,6 +269,22 @@ class SearchService:
             self.fb_count += 1
         n = self.cache.invalidate(lambda k_: k_[0] == locale and k_[3] == key and k_[1] == "ltr_fb")
         return {"ok": True, "invalidated_cache_entries": n, "events_logged": self.fb_count}
+
+    # ---------------------------------------------------------------- autocomplete
+    def suggest(self, prefix: str, locale: str, n: int = 8) -> list[str]:
+        import bisect  # noqa: PLC0415
+        idx = self._suggest.get(locale)
+        p = A.normalize(prefix)
+        if not idx or len(p) < 2:
+            return []
+        norm, raw, traffic = idx
+        lo = bisect.bisect_left(norm, p)
+        hi = bisect.bisect_left(norm, p + "\uffff")
+        if hi <= lo:
+            return []
+        cand = range(lo, min(hi, lo + 2000))
+        best = sorted(cand, key=lambda i: -traffic[i])[:n]
+        return [str(raw[i]) for i in best]
 
     # ---------------------------------------------------------------- demo helpers
     def sample_queries(self, locale: str, per_slice: int = 4, seed: int = 0) -> dict:

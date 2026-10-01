@@ -191,7 +191,8 @@ td.num, th.num { text-align: right; font-family: var(--f-mono); font-variant-num
     <div class="brand"><b>Commerce Search</b><span id="corpusTag">storefront</span></div>
     <form class="searchform" id="searchForm" role="search">
       <div class="searchbox">
-        <input id="q" name="q" type="search" placeholder="Search products — try something vague, misspelled or specific" autocomplete="off" aria-label="Search products">
+        <input id="q" name="q" type="search" list="suggestions" placeholder="Search products — try something vague, misspelled or specific" autocomplete="off" aria-label="Search products">
+        <datalist id="suggestions"></datalist>
         <select id="locale" aria-label="Market"></select>
       </div>
       <button class="btn primary" type="submit">Search</button>
@@ -249,7 +250,8 @@ const METHOD_DESC = {
   hybrid: "Blend both scores", ltr: "Learned reranker on product content", ltr_fb: "Reranker + shopper feedback (simulated)"
 };
 const LABEL_NAME = { E: "Exact", S: "Substitute", C: "Complement", I: "Irrelevant", U: "Unjudged" };
-const state = { locale: "us", method: null, q: "", tab: "shop", health: null, last: null, cmp: null, fb: {} };
+const state = { locale: "us", method: null, q: "", tab: "shop", health: null, last: null, cmp: null, fb: {},
+                filters: { department: null, in_stock: false } };
 
 // ------------------------------------------------------------------ data access (live API or embedded snapshot)
 const norm = q => (q || "").normalize("NFKC").toLowerCase().replace(/\s+/g, " ").trim();
@@ -261,7 +263,13 @@ const api = {
   examples(loc) { return SNAP ? Promise.resolve(SNAP.examples[loc] || {}) : this.get(`/api/examples?locale=${loc}`); },
   async search(q, loc, m) {
     if (SNAP) { const c = snapFind(q, loc); if (!c) throw new SnapMiss(); return c.runs[m] || Object.values(c.runs).pop(); }
-    return this.get(`/api/search?q=${encodeURIComponent(q)}&locale=${loc}&method=${m}&k=10`);
+    const f = state.filters;
+    const fq = (f.department ? `&department=${encodeURIComponent(f.department)}` : "") + (f.in_stock ? "&in_stock=true" : "");
+    return this.get(`/api/search?q=${encodeURIComponent(q)}&locale=${loc}&method=${m}&k=10${fq}`);
+  },
+  async suggest(q, loc) {
+    if (SNAP) { const n = norm(q); return Object.keys(SNAP.queries).filter(k => k.startsWith(loc + "|") && k.slice(3).startsWith(n)).map(k => SNAP.queries[k].query).slice(0, 8); }
+    return this.get(`/api/suggest?q=${encodeURIComponent(q)}&locale=${loc}`).catch(() => []);
   },
   async compare(q, loc) {
     if (SNAP) { const c = snapFind(q, loc); if (!c) throw new SnapMiss(); return c; }
@@ -379,12 +387,15 @@ function renderUnderstanding(u, res) {
   if (u.pack_count) attrs.push(`<span class="pill">pack of ${u.pack_count}</span>`);
   const brands = (u.brands || []).map(b => `<span class="pill tag">brand: ${esc(b)}</span>`);
   const neg = (u.negated_terms || []).map(n => `<span class="pill bad">exclude: ${esc(n)}</span>`);
-  const depts = (u.departments || []).map(d => `<div class="deptrow"><span>${esc(d.name)}</span><span class="mono" style="text-align:right">${fmt(d.p, 2)}</span><div class="bar"><i style="width:${d.p * 100}%"></i></div></div>`).join("");
+  const depts = (u.departments || []).map(d => `<button class="deptrow" style="border:0;background:none;padding:0;text-align:left;cursor:${SNAP ? "default" : "pointer"}" data-dept="${esc(d.name)}" ${SNAP ? "disabled" : ""} title="${SNAP ? "Filters work in the live app" : "Show only " + esc(d.name)}"><span>${esc(d.name)}</span><span class="mono" style="text-align:right">${fmt(d.p, 2)}</span><span class="bar"><i style="width:${d.p * 100}%"></i></span></button>`).join("");
+  const active = state.filters.department ? `<div class="pills"><span class="pill tag">department: ${esc(state.filters.department)}</span><button class="chip" data-clear-dept="1">Clear filter</button></div>` : "";
   $("#understanding").innerHTML = `<h3>Query understanding</h3>
     <div class="kv"><div class="row"><span class="muted">Normalised</span><span class="mono">${esc(u.normalized)}</span></div></div>
-    ${u.vague ? `<div class="notice">This query is vague: no single department is likely. A storefront would offer these as refinements.</div>` : ""}
+    ${u.vague ? `<div class="notice">This query is vague: no single department is likely.${SNAP ? " In the live app the departments below act as refinements." : " Pick a department below to narrow it."}</div>` : ""}
+    ${active}
     <div><div class="eyebrow" style="margin-bottom:6px">Detected</div><div class="pills">${[...attrs, ...brands, ...neg].join("") || "<span class='muted'>No attributes, brands or exclusions.</span>"}</div></div>
-    ${depts ? `<div><div class="eyebrow" style="margin-bottom:6px">Likely departments</div><div style="display:grid;gap:8px">${depts}</div></div>` : ""}
+    ${depts ? `<div><div class="eyebrow" style="margin-bottom:6px">Likely departments${SNAP ? "" : " · click to filter"}</div><div style="display:grid;gap:8px">${depts}</div></div>` : ""}
+    ${SNAP ? "" : `<label style="display:flex;gap:8px;align-items:center;font-size:.85rem"><input type="checkbox" id="instock" ${state.filters.in_stock ? "checked" : ""}> In stock only</label>`}
     <div class="kv"><div class="eyebrow">Served</div>
       <div class="row"><span class="muted">Approach</span><span>${esc(labelOf(res.served_by))}</span></div>
       <div class="row"><span class="muted">Candidates</span><span class="mono">${res.candidates ?? "–"}</span></div>
@@ -422,10 +433,12 @@ async function runSearch() {
 }
 
 async function renderRails(res) {
+  const rel = res.related_searches || [];
+  const relHtml = rel.length ? `<div class="rail"><div class="eyebrow" style="margin-bottom:8px">Related searches (shoppers' queries that share exact matches)</div><div class="pills">${rel.map(q => `<button class="chip" data-q="${esc(q)}">${esc(q)}</button>`).join("")}</div></div>` : "";
   const subs = res.results.filter(r => r.explanation?.result_type?.label === "S" && (r.explanation.result_type.confidence ?? 0) >= 0.4).slice(0, 6);
   let html = "";
   if (subs.length) html += `<div class="rail"><div class="eyebrow" style="margin-bottom:8px">Close alternatives (predicted substitutes)</div><div class="strip">${subs.map(mini).join("")}</div></div>`;
-  $("#rails").innerHTML = html;
+  $("#rails").innerHTML = relHtml + html;
   const top = res.results[0];
   if (!top) return;
   const p = await api.product(top.doc_id, state.locale).catch(() => null);
@@ -674,7 +687,9 @@ document.addEventListener("click", async ev => {
   if (!t) { if (ev.target === $("#drawer")) $("#drawer").hidden = true; return; }
   if (t.dataset.tab) setTab(t.dataset.tab);
   else if (t.dataset.method) { state.method = t.dataset.method; renderDial(); if (state.q) runSearch(); }
-  else if (t.dataset.q) { $("#q").value = t.dataset.q; state.tab === "compare" ? runCompare() : runSearch(); }
+  else if (t.dataset.q) { $("#q").value = t.dataset.q; state.filters.department = null; state.tab === "compare" ? runCompare() : runSearch(); }
+  else if (t.dataset.dept) { state.filters.department = t.dataset.dept; runSearch(); }
+  else if (t.dataset.clearDept) { state.filters.department = null; runSearch(); }
   else if (t.dataset.why) { const b = $(`[data-whybox="${t.dataset.why}"]`); b.hidden = !b.hidden; t.setAttribute("aria-pressed", !b.hidden); }
   else if (t.dataset.fb) {
     const fbk = `${state.q}|${t.dataset.doc}`; state.fb[fbk] = t.dataset.fb;
@@ -691,7 +706,16 @@ document.addEventListener("mouseover", e => {
   const row = e.target.closest(".crow"); document.querySelectorAll(".crow.hl").forEach(x => x.classList.remove("hl"));
   if (row) document.querySelectorAll(`.crow[data-doc="${CSS.escape(row.dataset.doc)}"]`).forEach(x => x.classList.add("hl"));
 });
-$("#searchForm").addEventListener("submit", e => { e.preventDefault(); state.tab === "compare" ? runCompare() : runSearch(); });
+$("#searchForm").addEventListener("submit", e => { e.preventDefault(); if ($("#q").value.trim() !== state.q) state.filters.department = null; state.tab === "compare" ? runCompare() : runSearch(); });
+document.addEventListener("change", e => { if (e.target.id === "instock") { state.filters.in_stock = e.target.checked; runSearch(); } });
+let sugT = null;
+$("#q").addEventListener("input", e => {
+  clearTimeout(sugT);
+  sugT = setTimeout(async () => {
+    const list = await api.suggest(e.target.value, state.locale);
+    $("#suggestions").innerHTML = (list || []).map(x => `<option value="${esc(x)}"></option>`).join("");
+  }, 150);
+});
 $("#locale").addEventListener("change", async e => { state.locale = e.target.value; const ex = await renderExamples(); const first = Object.values(ex)[0]?.[0]; if (first) { $("#q").value = first; runSearch(); } });
 
 (async function init() {

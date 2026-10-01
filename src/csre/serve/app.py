@@ -2,10 +2,11 @@
 
 GET  /                     storefront (search, compare approaches, evaluation, models)
 GET  /api/health           corpus, locales, methods, model versions, cache + latency stats
-GET  /api/search           q, locale, method, k, explain, budget_ms
+GET  /api/search           q, locale, method, k, explain, budget_ms, department, in_stock, max_price
 GET  /api/compare          q, locale, methods (comma separated), k
 GET  /api/product/{doc_id} locale -> product + substitutes + complements
 POST /api/feedback         {query, locale, doc_id, event, position, method}
+GET  /api/suggest          q, locale -> autocomplete from popular queries
 GET  /api/examples         locale -> example queries per evaluation slice
 GET  /api/eval             latest evaluation report (JSON)
 GET  /api/models           model registry
@@ -57,9 +58,12 @@ def create_app(cfg: Config, corpus: str | None = None, engine: Engine | None = N
 
     @app.get("/api/search")
     def search(q: str = Query(..., min_length=1, max_length=300), locale: str = "us", method: str | None = None,
-               k: int = Query(10, ge=1, le=100), explain: bool = True, budget_ms: float | None = None):
+               k: int = Query(10, ge=1, le=100), explain: bool = True, budget_ms: float | None = None,
+               department: str | None = None, in_stock: bool = False, max_price: float | None = None):
         try:
-            return JSONResponse(svc.search(q, locale, method, k=k, explain=explain, budget_ms=budget_ms))
+            return JSONResponse(svc.search(q, locale, method, k=k, explain=explain, budget_ms=budget_ms,
+                                           filters={"department": department, "in_stock": in_stock,
+                                                    "max_price": max_price}))
         except (KeyError, ValueError) as e:
             raise HTTPException(400, str(e)) from e
 
@@ -84,6 +88,10 @@ def create_app(cfg: Config, corpus: str | None = None, engine: Engine | None = N
             return svc.feedback(ev)
         except (KeyError, ValueError) as e:
             raise HTTPException(400, str(e)) from e
+
+    @app.get("/api/suggest")
+    def suggest(q: str = "", locale: str = "us"):
+        return svc.suggest(q, locale)
 
     @app.get("/api/examples")
     def examples(locale: str = "us"):

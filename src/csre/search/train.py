@@ -154,7 +154,7 @@ def _feat_batch(batch):
     out = []
     for qid, query, loc in batch:
         rows, grades = _JUD[qid]
-        ctx = _ENG.context(query, loc)
+        ctx = _ENG.context(_ENG.rewrite(query, loc)[0], loc)   # the spelling-corrected text was primed
         X = _ENG.builders[loc].build(ctx, rows, with_feedback=True)
         out.append((qid, X, grades, rows))
     return out
