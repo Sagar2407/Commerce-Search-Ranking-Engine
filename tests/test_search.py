@@ -178,3 +178,14 @@ def test_spell_corrector_rare_seller_misspellings():
     assert strict.correct("wireles earbuds")[1] == []                       # seen in 4 products: left alone
     lenient = SpellCorrector.from_bm25(idx, min_df=5, max_df=3, min_ratio=20, rare_df=50, strong_ratio=50)
     assert lenient.correct("wireles earbuds")[1] == [("wireles", "wireless")]  # but 100x rarer than its neighbour
+
+
+def test_result_cache_tag_invalidation_and_eviction():
+    from csre.serve.service import ResultCache
+    c = ResultCache(max_entries=3, ttl_s=60)
+    for i, m in enumerate(["bm25", "ltr_fb", "ltr"]):
+        c.put(("us", m, 10, "water bottle", True, None, (), ()), i)
+    assert c.invalidate("us", "water bottle", lambda k: k[1] == "ltr_fb") == 1
+    c.put(("us", "bm25", 10, "shoe", True, None, (), ()), 9)
+    c.put(("us", "bm25", 10, "sock", True, None, (), ()), 9)        # evicts the oldest entry
+    assert c.invalidate("us", "water bottle") == 1 and len(c.data) == 2 and ("us", "water bottle") not in c.by_tag

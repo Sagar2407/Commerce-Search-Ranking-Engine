@@ -67,7 +67,9 @@ class Dataset:
         return self.paths["catalog"].exists() and self.paths["queries"].exists()
 
     def index_dir(self) -> Path:
-        return self.cfg.path("indexes", self.name)
+        """Index directory; `search.index_tag` keeps candidate-encoder indexes apart (e.g. full_pretrained)."""
+        tag = self.cfg.get("search.index_tag") or ""
+        return self.cfg.path("indexes", f"{self.name}_{tag}" if tag else self.name)
 
     # ---------------------------------------------------------------- tables
     def catalog(self, locale: str, columns: list[str] | None = None) -> pl.DataFrame:

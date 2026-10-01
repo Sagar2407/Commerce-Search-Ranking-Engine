@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 import threading
 import time
+import uuid
 from collections import OrderedDict
 from pathlib import Path
 
@@ -32,6 +33,7 @@ class ResultCache:
     def __init__(self, max_entries: int = 50_000, ttl_s: float = 900):
         self.max, self.ttl = max_entries, ttl_s
         self.data: OrderedDict = OrderedDict()
+        self.by_tag: dict = {}            # (locale, query key) -> cache keys, for O(1) invalidation
         self.hits = self.misses = self.evictions = 0
         self.lock = threading.Lock()
 
@@ -41,25 +43,41 @@ class ResultCache:
             if v is None or time.time() - v[0] > self.ttl:
                 if v is not None:
                     del self.data[key]
+                    self._untag(key)
                 self.misses += 1
                 return None
             self.data.move_to_end(key)
             self.hits += 1
             return v[1]
 
+    @staticmethod
+    def _tag(key):
+        return (key[0], key[3])            # (locale, normalised query)
+
     def put(self, key, value) -> None:
         with self.lock:
             self.data[key] = (time.time(), value)
             self.data.move_to_end(key)
+            self.by_tag.setdefault(self._tag(key), set()).add(key)
             while len(self.data) > self.max:
-                self.data.popitem(last=False)
+                old, _ = self.data.popitem(last=False)
+                self._untag(old)
                 self.evictions += 1
 
-    def invalidate(self, pred) -> int:
+    def _untag(self, key) -> None:
+        ks = self.by_tag.get(self._tag(key))
+        if ks is not None:
+            ks.discard(key)
+            if not ks:
+                del self.by_tag[self._tag(key)]
+
+    def invalidate(self, locale: str, query_key: str, pred=lambda k: True) -> int:
+        """Drop cached responses for one (locale, query) — constant time in the cache size."""
         with self.lock:
-            ks = [k for k in self.data if pred(k)]
+            ks = [k for k in self.by_tag.get((locale, query_key), ()) if pred(k)]
             for k in ks:
-                del self.data[k]
+                self.data.pop(k, None)
+                self._untag(k)
             return len(ks)
 
     def stats(self) -> dict:
@@ -127,6 +145,8 @@ class SearchService:
         self.edges = ds.edges()
         self.cat_comp = ds.category_complements()
         self.request_log: list[dict] = []
+        from .experiment import Experiment  # noqa: PLC0415
+        self.experiment = Experiment.from_config(cfg)
 
     # ---------------------------------------------------------------- helpers
     def judged_query(self, query: str, locale: str) -> int | None:
@@ -149,7 +169,36 @@ class SearchService:
     # ---------------------------------------------------------------- search
     def search(self, query: str, locale: str, method: str | None = None, k: int = 10, explain: bool = True,
                use_cache: bool = True, budget_ms: float | None = None, rescue: bool | None = None,
-               filters: dict | None = None) -> dict:
+               filters: dict | None = None, user_id: str | None = None, pre_success: float | None = None) -> dict:
+        """Search; with a user id and no explicit method, the running experiment picks the ranking (by user)."""
+        arm = None
+        if self.experiment is not None and user_id and method is None:
+            arm = self.experiment.assign(user_id)
+            method = self.experiment.arms[arm]
+            budget_ms = budget_ms if budget_ms is not None else self.budget_ms   # production path: enforce budget
+        out = self._search(query, locale, method, k, explain, use_cache, budget_ms, rescue, filters)
+        if arm is not None:
+            sid = uuid.uuid4().hex
+            out = dict(out)
+            out["experiment"] = {"name": self.experiment.name, "arm": arm, "search_id": sid}
+            self._log({"event": "exposure", "experiment": self.experiment.name, "arm": arm, "user_id": user_id,
+                       "search_id": sid, "locale": locale, "query": query, "method": method,
+                       "served_by": out["served_by"], "fallback_reason": out["fallback_reason"],
+                       "engine_ms": out.get("engine_ms"), "cache_hit": out["cache"]["hit"],
+                       "n_results": len(out["results"]), "doc_ids": [r["doc_id"] for r in out["results"]],
+                       "versions": out["versions"], "pre_success": pre_success})
+        return out
+
+    def _log(self, rec: dict) -> None:
+        rec = {"ts": time.strftime("%Y-%m-%dT%H:%M:%S"), **rec}
+        with self.fb_lock:
+            with open(self.fb_dir / f"events-{time.strftime('%Y%m%d')}.jsonl", "a") as f:
+                f.write(json.dumps(rec, ensure_ascii=False, default=str) + "\n")
+            self.fb_count += 1
+
+    def _search(self, query: str, locale: str, method: str | None = None, k: int = 10, explain: bool = True,
+                use_cache: bool = True, budget_ms: float | None = None, rescue: bool | None = None,
+                filters: dict | None = None) -> dict:
         method = method or self.default_method
         if method not in METHODS:
             raise ValueError(f"unknown method {method!r}")
@@ -260,14 +309,13 @@ class SearchService:
             # position-based propensity (1/rank) for IPS-weighted clicks, as in the simulator's click model
             prop = 1.0 / max(1, int(ev.get("position") or 1))
             self.engine.feedback.add(locale, key, row, event, propensity=prop)
-        rec = {"ts": time.strftime("%Y-%m-%dT%H:%M:%S"), "locale": locale, "query": query, "key": key,
-               "doc_id": doc_id, "event": event, "position": ev.get("position"), "method": ev.get("method"),
-               "versions": self.engine.versions}
-        with self.fb_lock:
-            with open(self.fb_dir / f"events-{time.strftime('%Y%m%d')}.jsonl", "a") as f:
-                f.write(json.dumps(rec, ensure_ascii=False) + "\n")
-            self.fb_count += 1
-        n = self.cache.invalidate(lambda k_: k_[0] == locale and k_[3] == key and k_[1] == "ltr_fb")
+        rec = {"locale": locale, "query": query, "key": key, "doc_id": doc_id, "event": event,
+               "position": ev.get("position"), "method": ev.get("method"), "versions": self.engine.versions}
+        for f_ in ("user_id", "search_id", "experiment", "arm"):   # experiment attribution, when present
+            if ev.get(f_):
+                rec[f_] = ev[f_]
+        self._log(rec)
+        n = self.cache.invalidate(locale, key, lambda k_: k_[1] == "ltr_fb")
         return {"ok": True, "invalidated_cache_entries": n, "events_logged": self.fb_count}
 
     # ---------------------------------------------------------------- autocomplete

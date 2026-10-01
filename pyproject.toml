@@ -41,4 +41,5 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]          # tests share helpers (tests/test_api.py)
 filterwarnings = ["ignore::DeprecationWarning"]

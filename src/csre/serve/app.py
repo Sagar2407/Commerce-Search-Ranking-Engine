@@ -2,7 +2,8 @@
 
 GET  /                     storefront (search, compare approaches, evaluation, models)
 GET  /api/health           corpus, locales, methods, model versions, cache + latency stats
-GET  /api/search           q, locale, method, k, explain, budget_ms, department, in_stock, max_price
+GET  /api/search           q, locale, method, k, explain, budget_ms, department, in_stock, max_price, user_id
+GET  /api/experiment       running A/B experiment and (with user_id) the shopper's arm
 GET  /api/compare          q, locale, methods (comma separated), k
 GET  /api/product/{doc_id} locale -> product + substitutes + complements
 POST /api/feedback         {query, locale, doc_id, event, position, method}
@@ -59,11 +60,12 @@ def create_app(cfg: Config, corpus: str | None = None, engine: Engine | None = N
     @app.get("/api/search")
     def search(q: str = Query(..., min_length=1, max_length=300), locale: str = "us", method: str | None = None,
                k: int = Query(10, ge=1, le=100), explain: bool = True, budget_ms: float | None = None,
-               department: str | None = None, in_stock: bool = False, max_price: float | None = None):
+               department: str | None = None, in_stock: bool = False, max_price: float | None = None,
+               user_id: str | None = None):
         try:
             return JSONResponse(svc.search(q, locale, method, k=k, explain=explain, budget_ms=budget_ms,
                                            filters={"department": department, "in_stock": in_stock,
-                                                    "max_price": max_price}))
+                                                    "max_price": max_price}, user_id=user_id))
         except (KeyError, ValueError) as e:
             raise HTTPException(400, str(e)) from e
 
@@ -113,6 +115,16 @@ def create_app(cfg: Config, corpus: str | None = None, engine: Engine | None = N
         if not p.exists():
             raise HTTPException(404, f"no {name} report yet")
         return JSONResponse(json.loads(p.read_text()))
+
+    @app.get("/api/experiment")
+    def experiment(user_id: str | None = None):
+        e = svc.experiment
+        if e is None:
+            return {"enabled": False}
+        out = {"enabled": True, "name": e.name, "arms": e.arms, "allocation": e.allocation}
+        if user_id:
+            out["assignment"] = e.assign(user_id)
+        return out
 
     @app.get("/api/models")
     def models():

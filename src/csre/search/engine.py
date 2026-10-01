@@ -179,9 +179,10 @@ class Engine:
         t = time.time()
         self.parser = QueryParser(self.ds.brand_patterns())
         self.encoder = None
-        if load_dense and self.registry.path("dense_encoder"):
-            self.encoder = load_encoder(self.registry.path("dense_encoder"))
-            self.versions["dense_encoder"] = self.registry.resolve("dense_encoder")
+        enc_alias = cfg.get("search.dense.encoder_alias", "production")
+        if load_dense and self.registry.path("dense_encoder", enc_alias):
+            self.encoder = load_encoder(self.registry.path("dense_encoder", enc_alias))
+            self.versions["dense_encoder"] = self.registry.resolve("dense_encoder", enc_alias)
         self.qcat = None
         if self.registry.path("query_category"):
             self.qcat = QueryCategoryModel.load(self.registry.path("query_category"))
@@ -514,12 +515,13 @@ def build_indexes(cfg: Config, corpus: str | None = None) -> dict:
     from ..utils import stage_timer  # noqa: PLC0415
     ds = Dataset(cfg, corpus)
     reg = ModelRegistry(cfg)
-    enc_path = reg.path("dense_encoder")
+    alias = cfg.get("search.dense.encoder_alias", "production")
+    enc_path = reg.path("dense_encoder", alias)
     encoder = load_encoder(enc_path) if enc_path else None
     with stage_timer(cfg, f"index_{ds.name}") as info:
         per = {loc: build_locale_index(cfg, ds, loc, encoder) for loc in ds.locales()}
         manifest = {"corpus": ds.name, "built_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
-                    "dense_encoder": reg.resolve("dense_encoder") if encoder else None, "locales": per,
+                    "dense_encoder": reg.resolve("dense_encoder", alias) if encoder else None, "locales": per,
                     "bm25": cfg.get("search.bm25"), "ann": cfg.get("search.dense.ann")}
         (ds.index_dir() / "manifest.json").write_text(json.dumps(manifest, indent=2))
         info.update(rows=sum(v["n_docs"] for v in per.values()), corpus=ds.name)
