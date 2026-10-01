@@ -1,0 +1,709 @@
+<title>Commerce Search Data Card</title>
+<meta name="description" content="What the Commerce Search & Ranking Engine data layer contains, where each dataset comes from, and how it scales.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+:root {
+  color-scheme: light;
+  --ground: #f2f4f6;
+  --surface: #ffffff;
+  --sunk: #e9edf1;
+  --ink: #121820;
+  --ink-2: #4b5462;
+  --muted: #778191;
+  --hair: #dce1e7;
+  --axis: #c4cad2;
+  --accent: #2a78d6;
+  --real: #2a78d6;
+  --derived: #1baf7a;
+  --sim: #eb6834;
+  --lab-e: #184f95;
+  --lab-s: #3987e5;
+  --lab-c: #86b6ef;
+  --lab-i: #c3c2b7;
+  --good: #0a7d0a;
+  --bad: #c43333;
+  --tip-bg: #121820;
+  --tip-ink: #ffffff;
+  --f-display: "IBM Plex Sans Condensed", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --ground: #0d1014; --surface: #161a20; --sunk: #1d232a; --ink: #eef1f5; --ink-2: #b0b8c4; --muted: #808a99;
+    --hair: #29303a; --axis: #3a424d; --accent: #5598e7; --real: #3987e5; --derived: #199e70; --sim: #d95926;
+    --lab-e: #9ec5f4; --lab-s: #5598e7; --lab-c: #256abf; --lab-i: #4a5059; --good: #3ec43e; --bad: #ec6b6b;
+    --tip-bg: #eef1f5; --tip-ink: #121820;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ground: #0d1014; --surface: #161a20; --sunk: #1d232a; --ink: #eef1f5; --ink-2: #b0b8c4; --muted: #808a99;
+  --hair: #29303a; --axis: #3a424d; --accent: #5598e7; --real: #3987e5; --derived: #199e70; --sim: #d95926;
+  --lab-e: #9ec5f4; --lab-s: #5598e7; --lab-c: #256abf; --lab-i: #4a5059; --good: #3ec43e; --bad: #ec6b6b;
+  --tip-bg: #eef1f5; --tip-ink: #121820;
+}
+* { box-sizing: border-box; }
+body { background: var(--ground); color: var(--ink); font: 15px/1.55 var(--f-body); margin: 0; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-inline: 20px; padding-block: 36px 72px; }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; letter-spacing: -0.005em; }
+h1 { font-size: clamp(30px, 5vw, 46px); font-weight: 700; line-height: 1.05; }
+h2 { font-size: 26px; font-weight: 600; line-height: 1.15; }
+h3 { font-size: 16px; font-weight: 600; font-family: var(--f-body); letter-spacing: 0; }
+p { margin: 0; }
+code, .mono { font-family: var(--f-mono); font-size: 0.88em; }
+.eyebrow { font: 600 12px/1 var(--f-body); letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); }
+.lede { color: var(--ink-2); max-width: 68ch; font-size: 16.5px; }
+.note { color: var(--ink-2); max-width: 70ch; }
+.small { font-size: 13px; color: var(--muted); }
+header.top { display: grid; gap: 14px; padding-bottom: 28px; border-bottom: 1px solid var(--hair); }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; color: var(--ink-2); font-size: 13.5px; }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 500; background: var(--sunk); color: var(--ink); }
+.pill svg { width: 13px; height: 13px; }
+.pill.ok svg { color: var(--good); }
+.pill.fail svg { color: var(--bad); }
+.prov { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-2); white-space: nowrap; }
+.prov i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; background: var(--real); flex: none; }
+.prov i.derived { background: var(--derived); }
+.prov i.sim { background: var(--sim); }
+.prov i.subset { background: var(--muted); }
+.prov i.split { background: linear-gradient(90deg, var(--real) 50%, var(--derived) 50%); }
+
+.figures { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--hair); border: 1px solid var(--hair); border-radius: 10px; overflow: hidden; margin-top: 28px; }
+.fig { background: var(--surface); padding: 16px 18px 18px; display: grid; gap: 4px; align-content: start; }
+.fig .num { font: 600 32px/1.05 var(--f-display); letter-spacing: -0.01em; }
+.fig .lbl { font-size: 13px; color: var(--ink-2); }
+
+section { padding-top: 56px; display: grid; gap: 18px; }
+section > header { display: grid; gap: 8px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap: 18px; }
+.panel { background: var(--surface); border: 1px solid var(--hair); border-radius: 10px; padding: 18px 18px 16px; display: grid; gap: 12px; align-content: start; min-width: 0; }
+.panel h3 + p { color: var(--ink-2); font-size: 13.5px; margin-top: -6px; }
+
+.tbl-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+th { text-align: left; font-weight: 600; font-size: 12px; color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; padding: 6px 10px 8px 0; border-bottom: 1px solid var(--axis); white-space: nowrap; }
+td { padding: 7px 10px 7px 0; border-bottom: 1px solid var(--hair); vertical-align: top; }
+td.r, th.r { text-align: right; }
+tr:last-child td { border-bottom: 0; }
+.ledger td:first-child { font-family: var(--f-mono); font-size: 12.5px; white-space: nowrap; }
+.ledger td.purpose { color: var(--ink-2); min-width: 240px; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--ink-2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+
+.hbars { display: grid; gap: 10px; }
+.hrow { display: grid; grid-template-columns: minmax(64px, 150px) 1fr; gap: 12px; align-items: center; }
+.hrow .k { font-size: 13px; color: var(--ink-2); overflow-wrap: anywhere; }
+.stack { display: flex; gap: 2px; height: 20px; }
+.stack > div { height: 100%; min-width: 2px; }
+.stack > div:first-child { border-radius: 4px 0 0 4px; }
+.stack > div:last-child { border-radius: 0 4px 4px 0; }
+.stack > div:only-child { border-radius: 4px; }
+.bar1 { display: flex; align-items: center; gap: 8px; }
+.bar1 .b { height: 14px; border-radius: 0 4px 4px 0; background: var(--accent); min-width: 2px; }
+.bar1 .v { font-size: 12.5px; color: var(--ink-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dept .hrow { grid-template-columns: minmax(90px, 210px) 1fr; }
+.dept .bar1 .b.unknown { background: var(--lab-i); }
+
+.cellbar { display: grid; grid-template-columns: 44px 1fr; gap: 8px; align-items: center; min-width: 110px; }
+.cellbar .t { height: 6px; background: var(--sunk); border-radius: 3px; overflow: hidden; }
+.cellbar .t > div { height: 100%; background: var(--accent); border-radius: 3px; }
+
+.q { display: inline-block; font-family: var(--f-mono); font-size: 12px; background: var(--sunk); border-radius: 4px; padding: 1px 7px; margin: 0 4px 4px 0; color: var(--ink); }
+.slices td:first-child { white-space: nowrap; font-weight: 500; }
+.slices td.def { color: var(--ink-2); font-size: 12.5px; min-width: 200px; }
+
+.chart { width: 100%; position: relative; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart text { fill: var(--muted); font: 11.5px var(--f-body); font-variant-numeric: tabular-nums; }
+.chart .grid line { stroke: var(--hair); stroke-width: 1; }
+.chart .base { stroke: var(--axis); stroke-width: 1; }
+.hit { fill: transparent; cursor: default; }
+.hit:focus { outline: none; }
+.hit:focus-visible { stroke: var(--ink); stroke-width: 1.5; }
+[data-tip] { cursor: default; }
+[data-tip]:hover, [data-tip]:focus-visible { filter: brightness(1.08) saturate(1.05); outline: none; }
+
+#tip { position: fixed; z-index: 10; pointer-events: none; background: var(--tip-bg); color: var(--tip-ink); font-size: 12.5px; line-height: 1.4; padding: 7px 10px; border-radius: 6px; max-width: 260px; box-shadow: 0 6px 20px rgba(0,0,0,.18); }
+#tip strong { font-weight: 600; font-variant-numeric: tabular-nums; }
+#tip .sub { opacity: .75; }
+
+.checks { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr)); gap: 6px 22px; }
+.check { display: grid; grid-template-columns: 18px 1fr; gap: 8px; font-size: 13px; padding: 6px 0; border-bottom: 1px solid var(--hair); }
+.check svg { width: 15px; height: 15px; margin-top: 2px; }
+.check.ok svg { color: var(--good); }
+.check.fail svg { color: var(--bad); }
+.check .d { color: var(--muted); font-family: var(--f-mono); font-size: 11.5px; overflow-wrap: anywhere; }
+.variants td:nth-child(2), .variants td:nth-child(3) { font-family: var(--f-mono); font-size: 12px; }
+footer { margin-top: 56px; padding-top: 18px; border-top: 1px solid var(--hair); color: var(--muted); font-size: 13px; display: grid; gap: 6px; }
+@media (max-width: 760px) { .figures { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) {
+  .fig .num { font-size: 27px; }
+  h2 { font-size: 23px; }
+  .hrow { grid-template-columns: 1fr; gap: 4px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">Commerce Search &amp; Ranking Engine · Phase 1 · Data layer</div>
+    <h1>Commerce Search Data Card</h1>
+    <p class="lede">The benchmark, derived signals and simulated behaviour behind a product-search engine that has to work when a shopper's query is vague, incomplete, or worded differently from the catalog. Every dataset is tagged by where it came from.</p>
+    <div class="meta" id="meta"></div>
+    <div class="legend" aria-label="Provenance key">
+      <span class="prov"><i></i>Real — Amazon ESCI / ESCI-S</span>
+      <span class="prov"><i class="derived"></i>Derived — deterministic from real data</span>
+      <span class="prov"><i class="sim"></i>Simulated — calibrated, never a relevance label</span>
+    </div>
+  </header>
+
+  <div class="figures" id="figures"></div>
+
+  <section id="ledger-sec">
+    <header>
+      <div class="eyebrow">Inventory</div>
+      <h2>What was generated</h2>
+      <p class="note">Rows are read from Parquet metadata, sizes from disk. Everything rebuilds with <code>make data</code>; each stage streams in fixed-size batches or independent shards.</p>
+    </header>
+    <div class="panel"><div class="tbl-wrap"><table class="ledger" id="ledger"></table></div></div>
+  </section>
+
+  <section>
+    <header>
+      <div class="eyebrow">Ground truth</div>
+      <h2>Relevance judgments and splits</h2>
+      <p class="note">Up to 40 human-judged candidates per query. Gains follow the ESCI paper (E 1.0, S 0.1, C 0.01, I 0). Relevance outside a query's judged set is <em>unknown</em>, so full-catalog retrieval metrics report judged@k instead of treating unjudged products as irrelevant.</p>
+    </header>
+    <div class="grid2">
+      <div class="panel">
+        <h3>Label mix by locale</h3>
+        <p>Share of judged (query, product) pairs.</p>
+        <div class="legend" id="lab-legend"></div>
+        <div class="hbars" id="labmix"></div>
+      </div>
+      <div class="panel">
+        <h3>Queries per split</h3>
+        <p>ESCI test is untouched; dev is a hashed 10% of ESCI train.</p>
+        <div class="tbl-wrap"><table id="splits"></table></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <header>
+      <div class="eyebrow">Where search breaks</div>
+      <h2>Evaluation slices</h2>
+      <p class="note">Boolean flags on every query, so each metric can be broken down by the situations the business question cares about. Bars show the share of queries per locale; the last column counts held-out test queries.</p>
+    </header>
+    <div class="panel"><div class="tbl-wrap"><table class="slices" id="slices"></table></div></div>
+  </section>
+
+  <section>
+    <header>
+      <div class="eyebrow">Catalog</div>
+      <h2>1.8M products, cleaned and annotated</h2>
+      <p class="note">The same multilingual extractors parse titles and queries, so a result can be explained by the attribute that matched. ESCI has no categories: a classifier trained on real ESCI-S labels plus labels propagated through the relevance graph assigns a department only when it is confident.</p>
+    </header>
+    <div class="grid2">
+      <div class="panel">
+        <h3>Attribute and text coverage</h3>
+        <p>Share of products per locale.</p>
+        <div class="tbl-wrap"><table id="attrs"></table></div>
+      </div>
+      <div class="panel">
+        <h3>Department classifier: accuracy vs coverage</h3>
+        <p id="cm-note"></p>
+        <div class="legend"><span><i style="background:var(--accent)"></i>Accuracy on held-out real labels</span><span><i style="background:var(--sim)"></i>Share of products labelled</span></div>
+        <div class="chart" id="cm-chart"></div>
+      </div>
+    </div>
+    <div class="panel dept">
+      <h3>Products by department</h3>
+      <p>Unknown = classifier confidence below threshold.</p>
+      <div class="hbars" id="depts"></div>
+    </div>
+  </section>
+
+  <section>
+    <header>
+      <div class="eyebrow">Relations</div>
+      <h2>Substitutes and complements from co-judgments</h2>
+      <p class="note">Two products judged for the same query inherit a relation: Exact × Exact are interchangeable for that intent, Exact → Substitute and Exact → Complement feed "similar items" and "goes well with" rails.</p>
+    </header>
+    <div class="grid2">
+      <div class="panel"><h3>Product edges</h3><div class="tbl-wrap"><table id="edges"></table></div><p class="small" id="relq"></p></div>
+      <div class="panel"><h3>Strongest cross-department complement</h3><p>Share of each department's complement edges.</p><div class="tbl-wrap"><table id="comps"></table></div></div>
+    </div>
+  </section>
+
+  <section>
+    <header>
+      <div class="eyebrow">Simulated behaviour</div>
+      <h2>Traffic, clicks and conversions</h2>
+      <p class="note">A deliberately imperfect logging ranker with 5% randomised exploration, a position-based click model and a cart → purchase funnel, all grounded in the real labels. Useful for learning from feedback, caching and load tests, and for keeping offline relevance separate from conversion. It is not evidence of real conversion impact.</p>
+    </header>
+    <div class="figures" id="traffic-figs" style="margin-top:0"></div>
+    <div class="grid2">
+      <div class="panel">
+        <h3>Click-through rate by position</h3>
+        <p>Examination falls as 1/position; attractiveness follows the ESCI label.</p>
+        <div class="chart" id="ctr-chart"></div>
+      </div>
+      <div class="panel">
+        <h3>Searches per day</h3>
+        <p id="daily-note"></p>
+        <div class="chart" id="daily-chart"></div>
+      </div>
+      <div class="panel">
+        <h3>Funnel by relevance label</h3>
+        <p>Per impression.</p>
+        <div class="tbl-wrap"><table id="funnel"></table></div>
+      </div>
+      <div class="panel">
+        <h3>Query popularity</h3>
+        <p>A few head queries carry a large share of traffic; most test queries sit in the tail.</p>
+        <div class="legend" id="pop-legend"></div>
+        <div class="hbars" id="pop"></div>
+        <div class="tbl-wrap"><table id="poptbl"></table></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <header>
+      <div class="eyebrow">Load</div>
+      <h2>Replay stream for caching and latency</h2>
+      <p class="note">A 24-hour request stream. A share of requests are one-off variants of a known query, so cache hit rates stay realistic; each keeps its parent query id, which makes the variants a robustness slice too.</p>
+    </header>
+    <div class="grid2">
+      <div class="panel"><h3>Stream</h3><div class="tbl-wrap"><table id="replay"></table></div></div>
+      <div class="panel"><h3>Variant examples</h3><div class="tbl-wrap"><table class="variants" id="variants"></table></div></div>
+    </div>
+  </section>
+
+  <section>
+    <header>
+      <div class="eyebrow">Scale</div>
+      <h2>Catalog tiers up to 25M products</h2>
+      <p class="note">Perturbed copies of real products (brand, numbers, colour and pack size changed) grow the index for latency, memory and cost curves. They are never judged and never enter quality metrics.</p>
+    </header>
+    <div class="grid2">
+      <div class="panel">
+        <h3>Documents per tier</h3>
+        <div class="legend"><span><i style="background:var(--real)"></i>Real ESCI products</span><span><i style="background:var(--sim)"></i>Synthetic distractors</span></div>
+        <div class="hbars" id="tiers"></div>
+      </div>
+      <div class="panel">
+        <h3>Pipeline runs</h3>
+        <p>2 vCPU, 8 GB RAM, one machine.</p>
+        <div class="tbl-wrap"><table id="runs"></table></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <header>
+      <div class="eyebrow">Quality gate</div>
+      <h2>Validation</h2>
+      <p class="note">Run by <code>csre validate</code> before any model touches the data; a failure stops the pipeline.</p>
+    </header>
+    <div class="panel"><div class="checks" id="checks"></div></div>
+  </section>
+
+  <footer>
+    <div>Sources: Amazon Shopping Queries Dataset (ESCI), Reddy et al. 2022 · ESCI-S product metadata sample. Both Apache-2.0.</div>
+    <div id="foot"></div>
+  </footer>
+</div>
+<div id="tip" hidden></div>
+
+<script>
+const D = /*__DATACARD__*/null;
+
+const $ = (id) => document.getElementById(id);
+const NS = "http://www.w3.org/2000/svg";
+function h(tag, attrs = {}, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") e.className = v; else if (k === "style") e.style.cssText = v; else e.setAttribute(k, v);
+  }
+  for (const k of kids.flat()) if (k != null) e.append(k.nodeType ? k : document.createTextNode(String(k)));
+  return e;
+}
+function s(tag, attrs = {}) { const e = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); return e; }
+const nf = new Intl.NumberFormat("en-US");
+const fmt = (n) => n == null ? "—" : nf.format(Math.round(n));
+function compact(n) {
+  if (n == null) return "—";
+  const a = Math.abs(n);
+  if (a >= 1e9) return (n / 1e9).toFixed(a >= 1e10 ? 0 : 2).replace(/\.?0+$/, "") + "B";
+  if (a >= 1e6) return (n / 1e6).toFixed(a >= 1e8 ? 0 : a >= 1e7 ? 1 : 2).replace(/\.?0+$/, "") + "M";
+  if (a >= 1e4) return (n / 1e3).toFixed(0) + "K";
+  return nf.format(Math.round(n));
+}
+const pct = (x, d = 1) => x == null ? "—" : (x * 100).toFixed(d) + "%";
+const bytes = (b) => b >= 1e9 ? (b / 1e9).toFixed(2) + " GB" : b >= 1e6 ? (b / 1e6).toFixed(0) + " MB" : (b / 1e3).toFixed(0) + " KB";
+const LOC = { us: "US · English", es: "ES · Spanish", jp: "JP · Japanese" };
+const LOCS = ["us", "es", "jp"];
+
+/* ---------- tooltip ---------- */
+const tip = $("tip");
+function showTip(target, x, y) {
+  const t = target.getAttribute("data-tip"); if (!t) return;
+  const [strong, ...rest] = t.split("|");
+  tip.replaceChildren(h("strong", {}, strong), ...rest.map((r) => h("div", { class: "sub" }, r)));
+  tip.hidden = false;
+  const r = tip.getBoundingClientRect();
+  let left = x + 14, top = y + 14;
+  if (left + r.width > innerWidth - 8) left = x - r.width - 14;
+  if (top + r.height > innerHeight - 8) top = y - r.height - 14;
+  tip.style.left = Math.max(8, left) + "px"; tip.style.top = Math.max(8, top) + "px";
+}
+document.addEventListener("pointermove", (e) => {
+  const t = e.target.closest && e.target.closest("[data-tip]");
+  if (t) showTip(t, e.clientX, e.clientY); else tip.hidden = true;
+});
+document.addEventListener("focusin", (e) => {
+  const t = e.target.closest && e.target.closest("[data-tip]");
+  if (t) { const r = t.getBoundingClientRect(); showTip(t, r.left + r.width / 2, r.top); }
+});
+document.addEventListener("focusout", () => { tip.hidden = true; });
+document.addEventListener("scroll", () => { tip.hidden = true; }, { passive: true });
+
+function table(el, cols, rows) {
+  const thead = h("thead", {}, h("tr", {}, cols.map((c) => h("th", { class: c.r ? "r" : "" }, c.t))));
+  const tbody = h("tbody", {}, rows.map((r) => h("tr", {}, cols.map((c) => {
+    const v = c.f ? c.f(r) : r[c.k];
+    return h("td", { class: (c.r ? "r " : "") + (c.cls || "") }, v);
+  }))));
+  el.replaceChildren(thead, tbody);
+}
+const ICON_OK = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.5"/></svg>';
+const ICON_BAD = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg>';
+function icon(ok) { const w = h("span"); w.innerHTML = ok ? ICON_OK : ICON_BAD; return w.firstChild; }
+function provChip(p) {
+  const map = { "real": ["", "Real"], "derived": ["derived", "Derived"], "simulated": ["sim", "Simulated"], "real+derived": ["split", "Real + derived"], "subset": ["subset", "Subset"] };
+  const [c, t] = map[p] || ["", p];
+  return h("span", { class: "prov" }, h("i", { class: c }), t);
+}
+
+/* ---------- header + figures ---------- */
+function renderTop() {
+  const v = D.validation;
+  const ok = v && v.failed === 0;
+  $("meta").replaceChildren(
+    h("span", {}, "Generated " + D.generated_at),
+    h("span", {}, "Locales: us · es · jp"),
+    v ? (() => { const p = h("span", { class: "pill " + (ok ? "ok" : "fail") }); p.append(icon(ok), (v.checks - v.failed) + " of " + v.checks + " checks pass"); return p; })() : null,
+  );
+  const t = D.traffic.totals, jt = D.judgments.totals;
+  const nProducts = D.catalog.by_locale.reduce((a, r) => a + r.products, 0);
+  const maxTier = D.scale ? D.scale.tiers[D.scale.tiers.length - 1].total_docs : null;
+  const figs = [
+    [compact(nProducts), "products in the real catalog", ""],
+    [compact(jt.judgments), "human relevance judgments", ""],
+    [fmt(jt.queries), "shopping queries, 3 languages", ""],
+    [compact(D.graph.edges.reduce((a, r) => a + r.edges, 0)), "derived product relations", "derived"],
+    [compact(t.searches), "simulated searches", "sim"],
+    [compact(D.traffic.impressions.impressions), "simulated impressions", "sim"],
+    [maxTier ? compact(maxTier) : "—", "docs in the largest scale tier", "sim"],
+  ];
+  const fb = D.footprint_bytes || {};
+  figs.splice(3, 0, [((fb.processed + fb.synthetic + fb.scale) / 1e9).toFixed(1) + " GB", "generated on one 2-vCPU machine", "derived"]);
+  $("figures").replaceChildren(...figs.map(([n, l, c]) => h("div", { class: "fig" },
+    h("div", { class: "num" }, n), h("div", { class: "lbl" }, h("span", { class: "prov" }, h("i", { class: c }), l)))));
+}
+
+function renderLedger() {
+  table($("ledger"), [
+    { t: "Dataset", k: "dataset" },
+    { t: "Provenance", f: (r) => provChip(r.provenance) },
+    { t: "Rows", r: 1, f: (r) => r.rows == null ? "—" : fmt(r.rows) },
+    { t: "Size", r: 1, f: (r) => bytes(r.bytes) },
+    { t: "Purpose", k: "purpose", cls: "purpose" },
+  ], D.ledger);
+}
+
+/* ---------- judgments ---------- */
+const LABELS = [["E", "Exact", "--lab-e"], ["S", "Substitute", "--lab-s"], ["C", "Complement", "--lab-c"], ["I", "Irrelevant", "--lab-i"]];
+function renderJudgments() {
+  $("lab-legend").replaceChildren(...LABELS.map(([k, n, c]) => h("span", {}, h("i", { style: `background:var(${c})` }), `${k} · ${n}`)));
+  const agg = {};
+  for (const r of D.judgments.by_split_locale) {
+    const a = agg[r.locale] ||= { n: 0, E: 0, S: 0, C: 0, I: 0 };
+    a.n += r.judgments; for (const [k] of LABELS) a[k] += r[k] * r.judgments;
+  }
+  $("labmix").replaceChildren(...LOCS.filter((l) => agg[l]).map((l) => {
+    const a = agg[l];
+    return h("div", { class: "hrow" }, h("div", { class: "k" }, LOC[l]),
+      h("div", { class: "stack", role: "img", "aria-label": `${LOC[l]} label mix` }, LABELS.map(([k, n, c]) => {
+        const sh = a[k] / a.n;
+        return h("div", { style: `width:${sh * 100}%;background:var(${c})`, tabindex: "0",
+          "data-tip": `${pct(sh)}|${n} · ${LOC[l]}|${fmt(a[k])} judgments` });
+      })));
+  }));
+  const rows = LOCS.map((l) => {
+    const o = { locale: LOC[l] };
+    for (const sp of ["train", "dev", "test"]) {
+      const r = D.judgments.by_split_locale.find((x) => x.locale === l && x.split === sp);
+      o[sp] = r ? r.queries : 0; o[sp + "_c"] = r ? r.avg_candidates : null;
+    }
+    return o;
+  });
+  table($("splits"), [
+    { t: "Locale", k: "locale" },
+    { t: "Train", r: 1, f: (r) => fmt(r.train) }, { t: "Dev", r: 1, f: (r) => fmt(r.dev) },
+    { t: "Test", r: 1, f: (r) => fmt(r.test) }, { t: "Cands / query", r: 1, f: (r) => r.test_c },
+  ], rows);
+}
+
+/* ---------- slices ---------- */
+const SLICE_DEF = {
+  ambiguous: "Underspecified or multi-intent",
+  underspecified: "≤ 2 tokens (≤ 6 chars JP), no brand, number or attribute",
+  multi_intent: "Exact products span ≥ 2 departments",
+  negation: "“without / sin / なし”, or ESCI negation source",
+  spec: "States a measure, dimension, size or pack count",
+  brand: "Mentions a catalog brand",
+  sparse_products: "Most Exact products have thin descriptions",
+  hard: "ESCI hard set (easy queries removed)",
+  all_exact: "Every judged candidate is Exact",
+};
+function renderSlices() {
+  const byLoc = Object.fromEntries(D.query_slices.by_locale.map((r) => [r.locale, r]));
+  const testTot = {};
+  for (const r of D.query_slices.test_counts) for (const k of Object.keys(SLICE_DEF)) testTot[k] = (testTot[k] || 0) + (r[k] || 0);
+  const ex = Object.fromEntries((D.query_slices.examples || []).map((r) => [r.slice, r.examples]));
+  const exKey = { multi_intent: "ambiguous_multi_intent" };
+  const max = Math.max(...Object.keys(SLICE_DEF).flatMap((k) => LOCS.map((l) => byLoc[l] ? byLoc[l][k] : 0)));
+  const cell = (k, l) => {
+    const v = byLoc[l] ? byLoc[l][k] : 0;
+    return h("div", { class: "cellbar", tabindex: "0", "data-tip": `${pct(v)}|${k.replace("_", " ")} · ${LOC[l]}` },
+      h("span", {}, pct(v)), h("div", { class: "t" }, h("div", { style: `width:${(v / max) * 100}%` })));
+  };
+  const rows = Object.keys(SLICE_DEF).map((k) => ({ k }));
+  table($("slices"), [
+    { t: "Slice", f: (r) => r.k.replace("_", " ") },
+    { t: "Definition", cls: "def", f: (r) => {
+      const d = h("div", {}, SLICE_DEF[r.k]);
+      const e = ex[exKey[r.k] || r.k];
+      if (e && e.length) d.append(h("div", { style: "margin-top:5px" }, e.slice(0, 3).map((q) => h("span", { class: "q" }, q))));
+      return d;
+    } },
+    ...LOCS.map((l) => ({ t: l.toUpperCase(), f: (r) => cell(r.k, l) })),
+    { t: "Test queries", r: 1, f: (r) => fmt(testTot[r.k]) },
+  ], rows);
+}
+
+/* ---------- catalog ---------- */
+function renderCatalog() {
+  const b = Object.fromEntries(D.catalog.by_locale.map((r) => [r.locale, r]));
+  const rows = [
+    ["Products", "products", fmt], ["Has brand", "brand_share"], ["Has colour", "has_color"], ["Has material", "has_material"],
+    ["Has measure (12 oz, 30 cm)", "has_measure"], ["Has pack count", "has_pack_count"], ["Has audience", "has_audience"],
+    ["Sparse description", "sparse_share"], ["Title only", "title_only_share"], ["Department known", "known_category_share"],
+  ].map(([t, k, f]) => ({ t, vals: LOCS.map((l) => (f || ((x) => pct(x, 0)))(b[l][k])) }));
+  table($("attrs"), [{ t: "", k: "t" }, ...LOCS.map((l, i) => ({ t: l.toUpperCase(), r: 1, f: (r) => r.vals[i] }))], rows);
+
+  const cats = D.catalog.categories;
+  const mx = Math.max(...cats.map((c) => c.products));
+  const sorted = [...cats.filter((c) => c.category !== "Unknown"), ...cats.filter((c) => c.category === "Unknown")];
+  $("depts").replaceChildren(...sorted.map((c) => h("div", { class: "hrow" }, h("div", { class: "k" }, c.category),
+    h("div", { class: "bar1" }, h("div", { class: "b" + (c.category === "Unknown" ? " unknown" : ""), style: `width:calc(${(c.products / mx) * 100}% - 60px)`, tabindex: "0", "data-tip": `${fmt(c.products)} products|${c.category} · ${pct(c.share)}` }),
+      h("span", { class: "v" }, compact(c.products))))));
+
+  const cm = D.category_model;
+  if (cm) {
+    $("cm-note").textContent = `${fmt(cm.n_seed_labels)} real labels + ${fmt(cm.n_weak_labels)} propagated. At confidence ≥ ${cm.threshold}: ${pct(cm.accuracy_at_threshold)} accurate on ${pct(cm.coverage_at_threshold, 0)} of products.`;
+    lineChart($("cm-chart"), {
+      x: cm.coverage_accuracy_curve.map((r) => r.threshold), xFmt: (v) => v.toFixed(1), yMin: 0, yMax: 1, yFmt: (v) => Math.round(v * 100) + "%",
+      xLabel: "confidence threshold", marker: cm.threshold, xTickValues: [0, 0.2, 0.4, 0.6, 0.8],
+      series: [
+        { name: "Accuracy", color: "var(--accent)", y: cm.coverage_accuracy_curve.map((r) => r.accuracy) },
+        { name: "Coverage", color: "var(--sim)", y: cm.coverage_accuracy_curve.map((r) => r.coverage) },
+      ], tipFmt: (v) => pct(v), height: 220,
+    });
+  }
+}
+
+/* ---------- graph ---------- */
+function renderGraph() {
+  const REL = { co_exact: "Exact × Exact (co-exact)", substitute: "Exact → Substitute", complement: "Exact → Complement" };
+  table($("edges"), [{ t: "Relation", f: (r) => REL[r.relation] || r.relation }, { t: "Edges", r: 1, f: (r) => fmt(r.edges) },
+    { t: "Avg support", r: 1, k: "avg_support" }, { t: "Max support", r: 1, f: (r) => fmt(r.max_support) }], D.graph.edges);
+  $("relq").textContent = `${fmt(D.graph.related_queries.pairs)} related-query pairs cover ${fmt(D.graph.related_queries.queries)} queries (shared Exact products).`;
+  const c = [...D.graph.top_category_complements].sort((a, b) => b.share - a.share).slice(0, 9);
+  table($("comps"), [{ t: "Department", k: "src_category" }, { t: "Complemented by", k: "dst_category" }, { t: "Share", r: 1, f: (r) => pct(r.share) }], c);
+}
+
+/* ---------- traffic ---------- */
+function renderTraffic() {
+  const t = D.traffic.totals, im = D.traffic.impressions;
+  const figs = [
+    [compact(t.sessions), "sessions"], [compact(t.users), "users"], [pct(t.search_ctr), "searches with a click"],
+    [pct(t.abandonment_rate), "abandoned searches"], [pct(t.search_add_to_cart_rate), "searches with add-to-cart"],
+    [pct(t.search_conversion_rate), "searches with a purchase"], [pct(t.reformulation_share), "searches that are reformulations"],
+    [compact(im.explicit_feedback), "thumbs up / down events"],
+  ];
+  $("traffic-figs").replaceChildren(...figs.map(([n, l]) => h("div", { class: "fig" }, h("div", { class: "num" }, n), h("div", { class: "lbl" }, l))));
+  const cp = D.traffic.ctr_by_position;
+  columnChart($("ctr-chart"), { x: cp.map((r) => r.position), y: cp.map((r) => r.ctr), yFmt: (v) => Math.round(v * 100) + "%", tip: (x, y) => `${pct(y)}|position ${x}`, xLabel: "result position", height: 220 });
+  // first and last UTC days are partial (sessions are generated in each locale's local time)
+  const med = [...D.traffic.daily.map((r) => r.searches)].sort((a, b) => a - b)[Math.floor(D.traffic.daily.length / 2)];
+  const d = D.traffic.daily.filter((r) => r.searches > 0.8 * med);
+  $("daily-note").textContent = `${d.length} full UTC days from ${String(d[0].day).slice(0, 10)}; weekends run ~15% higher.`;
+  lineChart($("daily-chart"), {
+    x: d.map((r, i) => i), xFmt: (i) => String(d[i].day).slice(5, 10), yMin: 0, yFmt: compact, area: true,
+    series: [{ name: "Searches", color: "var(--accent)", y: d.map((r) => r.searches) }],
+    tipFmt: (v) => fmt(v) + " searches", xTip: (i) => String(d[i].day).slice(0, 10), height: 220, xTicks: 6,
+  });
+  const L = Object.fromEntries(LABELS.map(([k, n]) => [k, n]));
+  table($("funnel"), [{ t: "Label", f: (r) => `${r.esci_label} · ${L[r.esci_label]}` }, { t: "CTR", r: 1, f: (r) => pct(r.ctr, 2) },
+    { t: "Add to cart", r: 1, f: (r) => pct(r.cart_rate, 2) }, { t: "Purchase", r: 1, f: (r) => pct(r.purchase_rate, 2) }],
+    ["E", "S", "C", "I"].map((k) => D.traffic.ctr_by_label.find((r) => r.esci_label === k)).filter(Boolean));
+
+  const B = [["head", "Head", "--lab-e"], ["torso", "Torso", "--lab-s"], ["tail", "Tail", "--lab-c"]];
+  const pb = Object.fromEntries(D.traffic.popularity_buckets.map((r) => [r.traffic_bucket, r]));
+  const nq = Object.values(pb).reduce((a, r) => a + r.queries, 0);
+  $("pop-legend").replaceChildren(...B.map(([k, n, c]) => h("span", {}, h("i", { style: `background:var(${c})` }), n)));
+  const rowOf = (label, f) => h("div", { class: "hrow" }, h("div", { class: "k" }, label), h("div", { class: "stack" },
+    B.filter(([k]) => pb[k]).map(([k, n, c]) => { const v = f(pb[k]); return h("div", { style: `width:${v * 100}%;background:var(${c})`, tabindex: "0", "data-tip": `${pct(v, 2)}|${n} · ${label.toLowerCase()}` }); })));
+  $("pop").replaceChildren(rowOf("Share of traffic", (r) => r.traffic_share), rowOf("Share of queries", (r) => r.queries / nq));
+  table($("poptbl"), [{ t: "Bucket", f: (r) => r.traffic_bucket }, { t: "Queries", r: 1, f: (r) => fmt(r.queries) },
+    { t: "Traffic", r: 1, f: (r) => pct(r.traffic_share) }, { t: "Test queries", r: 1, f: (r) => fmt(r.test_queries) }],
+    B.map(([k]) => pb[k]).filter(Boolean));
+}
+
+/* ---------- replay ---------- */
+function renderReplay() {
+  const r = D.replay, hr = r.hit_rate_raw_vs_normalised || {}, rps = r.requests_per_second_by_minute || {};
+  const nov = (r.variants || []).filter((v) => v.variant !== "original").reduce((a, v) => a + v.requests, 0);
+  table($("replay"), [{ t: "", k: "k" }, { t: "", k: "v", r: 1 }], [
+    { k: "Requests (24h)", v: fmt(r.requests) },
+    { k: "One-off variants", v: `${fmt(nov)} (${pct(nov / r.requests, 0)})` },
+    { k: "Distinct parent queries", v: fmt(r.unique_queries) },
+    { k: "Ideal cache hit rate, raw text", v: pct(hr.raw_text) },
+    { k: "… after case / space normalisation", v: pct(hr.normalised) },
+    { k: "… if every variant resolved to its parent", v: pct(r.ideal_cache_hit_rate) },
+    { k: "Requests / s (median · peak minute)", v: `${rps.median_rps} · ${rps.peak_rps}` },
+  ]);
+  table($("variants"), [{ t: "Variant", f: (x) => x.variant.replace("_", " ") }, { t: "Original", k: "original" }, { t: "As typed", k: "typed" }],
+    (r.variant_examples || []).sort((a, b) => a.variant.localeCompare(b.variant)));
+}
+
+/* ---------- scale + runs + checks ---------- */
+function renderScale() {
+  if (D.scale) {
+    const tiers = D.scale.tiers, mx = Math.max(...tiers.map((t) => t.total_docs));
+    $("tiers").replaceChildren(...tiers.map((t) => h("div", { class: "hrow" }, h("div", { class: "k" }, compact(t.total_docs) + " docs"),
+      h("div", { class: "stack", style: `width:${(t.total_docs / mx) * 100}%` },
+        h("div", { style: `width:${(t.real_docs / t.total_docs) * 100}%;background:var(--real)`, tabindex: "0", "data-tip": `${fmt(t.real_docs)}|real products` }),
+        h("div", { style: `width:${(t.synthetic_docs / t.total_docs) * 100}%;background:var(--sim)`, tabindex: "0", "data-tip": `${fmt(t.synthetic_docs)}|synthetic distractors · ${t.synthetic_shards} shards` })))));
+  }
+  const NAMES = { acquire: "Acquire + verify", taxonomy: "Department model", catalog: "Catalog", judgments: "Judgments + slices", graph: "Product graph", sim_commerce: "Commerce attributes", sim_traffic: "Traffic + logs", sim_replay: "Replay stream", scale: "Scale tiers", demo: "Demo subset" };
+  const runs = Object.entries(D.stage_runs || {}).filter(([k]) => NAMES[k]).map(([k, v]) => ({ k, ...v }));
+  table($("runs"), [{ t: "Stage", f: (r) => NAMES[r.k] }, { t: "Rows", r: 1, f: (r) => r.rows ? compact(r.rows) : "—" },
+    { t: "Time", r: 1, f: (r) => r.seconds >= 60 ? (r.seconds / 60).toFixed(1) + " min" : Math.round(r.seconds) + " s" },
+    { t: "Rows / s", r: 1, f: (r) => r.rows_per_sec ? compact(r.rows_per_sec) : "—" }], runs);
+  const v = D.validation;
+  if (v) $("checks").replaceChildren(...v.results.map((c) => {
+    const d = typeof c.detail === "object" ? Object.entries(c.detail).map(([k, x]) => `${k}=${typeof x === "number" ? (Number.isInteger(x) ? fmt(x) : x) : x}`).join("  ") : String(c.detail);
+    return h("div", { class: "check " + (c.passed ? "ok" : "fail") }, icon(c.passed), h("div", {}, h("div", {}, c.check), h("div", { class: "d" }, d)));
+  }));
+  const f = D.footprint_bytes;
+  $("foot").textContent = `Disk footprint: raw ${bytes(f.raw)} · processed ${bytes(f.processed)} · synthetic ${bytes(f.synthetic)} · scale tiers ${bytes(f.scale)}.`;
+}
+
+/* ---------- SVG charts (re-rendered on resize) ---------- */
+function niceStep(v) { const p = Math.pow(10, Math.floor(Math.log10(v))); const m = v / p; return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 2.5 ? 2.5 : m <= 5 ? 5 : 10) * p; }
+function niceTicks(max, n = 4) { const st = niceStep(max / n); const top = Math.ceil(max / st - 1e-9) * st; const t = []; for (let v = 0; v <= top + st / 2; v += st) t.push(+v.toFixed(10)); return t; }
+function frame(el, height) {
+  const W = Math.max(280, el.clientWidth), H = height;
+  const svg = s("svg", { viewBox: `0 0 ${W} ${H}`, width: W, height: H, role: "img" });
+  el.replaceChildren(svg); return { svg, W, H };
+}
+function yAxis(svg, m, W, y, ticks, fmtY) {
+  const g = s("g", { class: "grid" });
+  for (const t of ticks) {
+    const yy = y(t);
+    g.append(s("line", { x1: m.l, x2: W - m.r, y1: yy, y2: yy }));
+    const tx = s("text", { x: m.l - 8, y: yy + 4, "text-anchor": "end" }); tx.textContent = fmtY(t); svg.append(tx);
+  }
+  svg.prepend(g);
+}
+function columnChart(el, o) {
+  const draw = () => {
+    const { svg, W, H } = frame(el, o.height);
+    const m = { l: 44, r: 8, t: 10, b: 38 };
+    const tk = niceTicks(Math.max(...o.y)), ymax = tk[tk.length - 1];
+    const y = (v) => m.t + (H - m.t - m.b) * (1 - v / ymax);
+    yAxis(svg, m, W, y, tk, o.yFmt);
+    const n = o.x.length, band = (W - m.l - m.r) / n, bw = Math.min(24, band - 2);
+    o.x.forEach((xv, i) => {
+      const x0 = m.l + i * band + (band - bw) / 2, y0 = y(o.y[i]), hgt = Math.max(1, y(0) - y0), r = Math.min(4, bw / 2, hgt);
+      const p = `M${x0},${y(0)} V${y0 + r} Q${x0},${y0} ${x0 + r},${y0} H${x0 + bw - r} Q${x0 + bw},${y0} ${x0 + bw},${y0 + r} V${y(0)} Z`;
+      svg.append(s("path", { d: p, fill: "var(--accent)" }));
+      const hit = s("rect", { class: "hit", x: m.l + i * band, y: m.t, width: band, height: H - m.t - m.b, tabindex: "0", "data-tip": o.tip(xv, o.y[i]) });
+      svg.append(hit);
+      if (n <= 12 || i === 0 || (i + 1) % 5 === 0) { const tx = s("text", { x: x0 + bw / 2, y: H - m.b + 16, "text-anchor": "middle" }); tx.textContent = xv; svg.append(tx); }
+    });
+    svg.append(s("line", { class: "base", x1: m.l, x2: W - m.r, y1: y(0), y2: y(0) }));
+    const lab = s("text", { x: m.l + (W - m.l - m.r) / 2, y: H - 4, "text-anchor": "middle" }); lab.textContent = o.xLabel; svg.append(lab);
+  };
+  draw(); new ResizeObserver(debounce(draw)).observe(el);
+}
+function lineChart(el, o) {
+  const draw = () => {
+    const { svg, W, H } = frame(el, o.height);
+    const m = { l: 46, r: 14, t: 12, b: o.xLabel ? 38 : 26 };
+    const allY = o.series.flatMap((sr) => sr.y);
+    const tk = o.yMax != null ? [0, 0.25, 0.5, 0.75, 1].map((f) => f * o.yMax) : niceTicks(Math.max(...allY));
+    const ymin = o.yMin ?? 0, ymax = tk[tk.length - 1];
+    const xs = o.x, x0 = xs[0], x1 = xs[xs.length - 1];
+    const x = (v) => m.l + ((v - x0) / (x1 - x0 || 1)) * (W - m.l - m.r);
+    const y = (v) => m.t + (H - m.t - m.b) * (1 - (v - ymin) / (ymax - ymin || 1));
+    yAxis(svg, m, W, y, tk, o.yFmt);
+    svg.append(s("line", { class: "base", x1: m.l, x2: W - m.r, y1: y(ymin), y2: y(ymin) }));
+    const step = Math.max(1, Math.round(xs.length / (o.xTicks || xs.length)));
+    const tickVals = o.xTickValues || xs.filter((v, i) => i % step === 0);
+    tickVals.forEach((v) => { const tx = s("text", { x: x(v), y: H - m.b + 16, "text-anchor": "middle" }); tx.textContent = o.xFmt(v); svg.append(tx); });
+    if (o.xLabel) { const lab = s("text", { x: m.l + (W - m.l - m.r) / 2, y: H - 4, "text-anchor": "middle" }); lab.textContent = o.xLabel; svg.append(lab); }
+    if (o.marker != null) {
+      svg.append(s("line", { x1: x(o.marker), x2: x(o.marker), y1: m.t, y2: y(ymin), stroke: "var(--ink-2)", "stroke-width": 1 }));
+      const tx = s("text", { x: x(o.marker) + 5, y: m.t + 10 }); tx.textContent = "threshold"; svg.append(tx);
+    }
+    for (const sr of o.series) {
+      const pts = xs.map((v, i) => [x(v), y(sr.y[i])]).filter((p, i) => sr.y[i] != null);
+      if (o.area) svg.append(s("path", { d: `M${pts[0][0]},${y(ymin)} ` + pts.map((p) => `L${p[0]},${p[1]}`).join(" ") + ` L${pts[pts.length - 1][0]},${y(ymin)} Z`, fill: sr.color, "fill-opacity": 0.1 }));
+      svg.append(s("path", { d: "M" + pts.map((p) => p.join(",")).join(" L"), fill: "none", stroke: sr.color, "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }));
+      const last = pts[pts.length - 1];
+      svg.append(s("circle", { cx: last[0], cy: last[1], r: 4, fill: sr.color, stroke: "var(--surface)", "stroke-width": 2 }));
+    }
+    // crosshair hit areas
+    const cross = s("line", { y1: m.t, y2: y(ymin), stroke: "var(--axis)", "stroke-width": 1, visibility: "hidden" });
+    svg.append(cross);
+    xs.forEach((v, i) => {
+      const left = i === 0 ? m.l : (x(xs[i - 1]) + x(v)) / 2, right = i === xs.length - 1 ? W - m.r : (x(v) + x(xs[i + 1])) / 2;
+      const lines = o.series.map((sr) => `${sr.name}: ${o.tipFmt(sr.y[i])}`);
+      const head = o.series.length === 1 ? o.tipFmt(o.series[0].y[i]) : (o.xTip ? o.xTip(v) : o.xFmt(v));
+      const rest = o.series.length === 1 ? [o.xTip ? o.xTip(v) : o.xFmt(v)] : [(o.xLabel || "") + " " + o.xFmt(v), ...lines];
+      const hit = s("rect", { class: "hit", x: left, y: m.t, width: Math.max(1, right - left), height: y(ymin) - m.t, tabindex: "0", "data-tip": [head, ...rest].join("|") });
+      hit.addEventListener("pointerenter", () => { cross.setAttribute("x1", x(v)); cross.setAttribute("x2", x(v)); cross.setAttribute("visibility", "visible"); });
+      hit.addEventListener("pointerleave", () => cross.setAttribute("visibility", "hidden"));
+      svg.append(hit);
+    });
+  };
+  draw(); new ResizeObserver(debounce(draw)).observe(el);
+}
+function debounce(f) { let t; return () => { clearTimeout(t); t = setTimeout(f, 80); }; }
+
+if (D) {
+  renderTop(); renderLedger(); renderJudgments(); renderSlices(); renderCatalog(); renderGraph(); renderTraffic(); renderReplay(); renderScale();
+}
+</script>

@@ -1,0 +1,143 @@
+{
+  "n_seed_labels": 4109,
+  "n_weak_labels": 57973,
+  "propagation": true,
+  "cv_folds": 5,
+  "accuracy": 0.7686,
+  "macro_f1": 0.67,
+  "threshold": 0.5,
+  "accuracy_at_threshold": 0.9022,
+  "coverage_at_threshold": 0.7041,
+  "by_locale": {
+    "us": {
+      "n": 2762,
+      "accuracy": 0.7867,
+      "accuracy_at_tau": 0.8961,
+      "coverage_at_tau": 0.7455
+    },
+    "es": {
+      "n": 612,
+      "accuracy": 0.7173,
+      "accuracy_at_tau": 0.9008,
+      "coverage_at_tau": 0.5931
+    },
+    "jp": {
+      "n": 735,
+      "accuracy": 0.7429,
+      "accuracy_at_tau": 0.9299,
+      "coverage_at_tau": 0.6408
+    }
+  },
+  "coverage_accuracy_curve": [
+    {
+      "threshold": 0.0,
+      "coverage": 1.0,
+      "accuracy": 0.7686
+    },
+    {
+      "threshold": 0.3,
+      "coverage": 0.8966,
+      "accuracy": 0.8225
+    },
+    {
+      "threshold": 0.4,
+      "coverage": 0.8085,
+      "accuracy": 0.8582
+    },
+    {
+      "threshold": 0.45,
+      "coverage": 0.7564,
+      "accuracy": 0.8819
+    },
+    {
+      "threshold": 0.5,
+      "coverage": 0.7041,
+      "accuracy": 0.9022
+    },
+    {
+      "threshold": 0.6,
+      "coverage": 0.5958,
+      "accuracy": 0.9326
+    },
+    {
+      "threshold": 0.7,
+      "coverage": 0.4785,
+      "accuracy": 0.9552
+    },
+    {
+      "threshold": 0.8,
+      "coverage": 0.3212,
+      "accuracy": 0.9712
+    }
+  ],
+  "label_distribution": [
+    {
+      "department": "Clothing, Shoes & Jewelry",
+      "count": 859
+    },
+    {
+      "department": "Home & Kitchen",
+      "count": 611
+    },
+    {
+      "department": "Electronics & Computers",
+      "count": 396
+    },
+    {
+      "department": "Books & Media",
+      "count": 356
+    },
+    {
+      "department": "Tools, Home Improvement & Garden",
+      "count": 314
+    },
+    {
+      "department": "Sports & Outdoors",
+      "count": 245
+    },
+    {
+      "department": "Toys, Games & Hobbies",
+      "count": 220
+    },
+    {
+      "department": "Health & Household",
+      "count": 219
+    },
+    {
+      "department": "Beauty & Personal Care",
+      "count": 218
+    },
+    {
+      "department": "Automotive",
+      "count": 145
+    },
+    {
+      "department": "Office Products",
+      "count": 122
+    },
+    {
+      "department": "Grocery & Gourmet Food",
+      "count": 116
+    },
+    {
+      "department": "Pet Supplies",
+      "count": 83
+    },
+    {
+      "department": "Arts, Crafts & Sewing",
+      "count": 74
+    },
+    {
+      "department": "Industrial & Scientific",
+      "count": 59
+    },
+    {
+      "department": "Baby Products",
+      "count": 45
+    },
+    {
+      "department": "Musical Instruments",
+      "count": 27
+    }
+  ]
+}

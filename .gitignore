@@ -1,0 +1,8 @@
+# generated data (rebuild with `make data`); small reports are kept
+data/*
+!data/reports/
+artifacts/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.venv/

@@ -1,0 +1,116 @@
+# Commerce Search & Ranking Engine — data layer configuration.
+# Every stage reads this file; override any value with `csre <stage> --set key.sub=value`.
+
+seed: 20260918
+
+paths:
+  raw: data/raw
+  processed: data/processed
+  synthetic: data/synthetic
+  scale: data/scale
+  models: data/models
+  reports: data/reports
+  demo: data/demo
+  duckdb_tmp: data/_tmp
+
+resources:
+  duckdb_memory_limit: 4GB
+  threads: 2
+  batch_rows: 100000          # streaming batch size for catalog processing
+
+esci:
+  base_url: https://media.githubusercontent.com/media/amazon-science/esci-data/main/shopping_queries_dataset
+  raw_url: https://raw.githubusercontent.com/amazon-science/esci-data/main/shopping_queries_dataset
+  files:
+    examples: {name: shopping_queries_dataset_examples.parquet, sha256: 4a735b693b4a424a6fc67f5be6e4c811495c488bbf66d02a602d308b2744263a, lfs: true}
+    products: {name: shopping_queries_dataset_products.parquet, sha256: 25124442d064d64b26f74082d6fa09438d679efc0c183cf28d19064a2b65a265, lfs: true}
+    sources:  {name: shopping_queries_dataset_sources.csv, sha256: null, lfs: false}
+
+esci_s:
+  # 4.4K-product sample with real category / price / rating metadata (Apache-2.0).
+  sample_url: https://media.githubusercontent.com/media/shuttie/esci-s/master/sample.json.gz
+  # Full dump (1.66M products, 3.4 GB). Not used yet: `acquire` only records whether it is present at
+  # data/raw/esci_s/esci.json.zst. Planned: replace classifier categories and simulated price/rating.
+  full_url: https://esci-s.s3.amazonaws.com/esci.json.zst
+
+splits:
+  dev_fraction: 0.10           # carved from ESCI train, by query, stratified by locale
+  # ESCI test split is the untouched held-out test set.
+
+relevance:
+  # Gains from the ESCI paper (Reddy et al., 2022) for nDCG.
+  gains: {E: 1.0, S: 0.1, C: 0.01, I: 0.0}
+  grades: {E: 3, S: 2, C: 1, I: 0}
+
+catalog:
+  doc_text_desc_chars: 600     # description chars kept in the retrieval doc_text
+  doc_text_bullets: 4          # bullets kept in doc_text
+  sparse_chars: {us: 150, es: 150, jp: 60}   # description+bullet chars below which a product is "sparse"
+
+taxonomy:
+  min_confidence: 0.50         # below this, category = "Unknown" (CV: ~90% accurate at ~70% coverage)
+  cv_folds: 5
+
+slices:
+  underspecified_max_tokens: 2         # us/es tokens
+  underspecified_max_chars_jp: 6
+  multi_intent_min_entropy: 0.9        # bits of category entropy across Exact products
+  multi_intent_min_share: 0.2          # second category must hold >= this share of Exact mass
+  sparse_query_min_share: 0.5          # share of Exact products that are sparse
+  brand_min_freq: 15                   # brand must appear on >= N products to be matched in queries
+
+simulation:
+  commerce:
+    rating_prior_weight: 1.0
+  traffic:
+    start_date: "2026-06-01"
+    history_days: 60
+    n_sessions: 30000000       # ~36M searches / ~600M impressions; scale up by adding shards
+    n_users: 4000000
+    shards: 120                # 250K sessions per shard -> constant memory per shard
+    zipf_s: 0.8
+    page_size: 20
+    max_reformulations: 2
+    logging_policy:
+      name: prod_bm25_v0_sim
+      grade_weight: 0.7
+      popularity_weight: 0.5
+      noise_sd: 1.0
+      explore_fraction: 0.05   # RandTop-10 shuffles for propensity estimation
+      explore_top_k: 10
+    click_model:
+      eta: 1.0                 # examination(k) = (1/k)^eta
+      attractiveness: {E: 0.35, S: 0.15, C: 0.07, I: 0.02}   # calibrated to ~30% CTR@1, ~30% abandonment
+      rating_effect: 0.30
+      price_effect: 0.15
+      p_cart_given_click: {E: 0.25, S: 0.15, C: 0.18, I: 0.02}
+      p_buy_given_cart: {E: 0.60, S: 0.50, C: 0.50, I: 0.20}
+      p_reformulate_if_abandon: 0.45
+      p_reformulate_if_no_cart: 0.15
+      explicit_feedback_rate: 0.005
+      explicit_feedback_accuracy: 0.88
+  replay:
+    date: "2026-08-01"
+    n_requests: 10000000
+    zipf_s: 0.8
+    # share of requests that are one-off variants of a known query (typo, dropped/reordered token,
+    # extra modifier, case/spacing). They keep parent_query_id, so they double as a robustness slice.
+    novel_fraction: 0.35
+
+scale:
+  # Total catalog sizes (real ESCI products + synthetic distractors) for systems benchmarks only.
+  tiers: [2500000, 5000000, 10000000, 25000000]
+  shard_rows: 1000000
+  locale_mix: {us: 0.67, es: 0.14, jp: 0.19}
+
+demo:
+  locale: us
+  n_queries: 3000
+  split: test
+  extra_distractors: 100000
+  portable:                     # download-sized copy (< 30 MB zipped), same schemas minus long text
+    n_queries: 1500
+    extra_distractors: 15000
+    drop_columns: [description, bullets]   # doc_text keeps the first bullets + 600 description chars
+    relations: [substitute, complement]
+    replay_rows: 50000

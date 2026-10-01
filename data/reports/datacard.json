@@ -1,0 +1,1989 @@
+{
+  "generated_at": "2026-09-18 23:44",
+  "ledger": [
+    {
+      "dataset": "catalog",
+      "path": "data/processed/catalog",
+      "provenance": "real+derived",
+      "rows": 1814924,
+      "bytes": 1131470978,
+      "purpose": "Cleaned products, extracted attributes, sparsity flags, department, retrieval text"
+    },
+    {
+      "dataset": "judgments",
+      "path": "data/processed/judgments.parquet",
+      "provenance": "real",
+      "rows": 2621285,
+      "bytes": 43993445,
+      "purpose": "ESCI Exact / Substitute / Complement / Irrelevant labels with gains and splits"
+    },
+    {
+      "dataset": "queries",
+      "path": "data/processed/queries.parquet",
+      "provenance": "real+derived",
+      "rows": 130652,
+      "bytes": 5726345,
+      "purpose": "Query text, parsed attributes, label profile, intent diversity, slice flags"
+    },
+    {
+      "dataset": "product_edges",
+      "path": "data/processed/graph/product_edges.parquet",
+      "provenance": "derived",
+      "rows": 17299770,
+      "bytes": 259883293,
+      "purpose": "Substitute, complement and co-exact product relations"
+    },
+    {
+      "dataset": "related_queries",
+      "path": "data/processed/graph/related_queries.parquet",
+      "provenance": "derived",
+      "rows": 781312,
+      "bytes": 3863087,
+      "purpose": "Queries sharing Exact products"
+    },
+    {
+      "dataset": "category_complements",
+      "path": "data/processed/graph/category_complements.parquet",
+      "provenance": "derived",
+      "rows": 266,
+      "bytes": 4896,
+      "purpose": "Which departments complement which"
+    },
+    {
+      "dataset": "product_commerce",
+      "path": "data/synthetic/product_commerce.parquet",
+      "provenance": "simulated",
+      "rows": 1814924,
+      "bytes": 22391470,
+      "purpose": "Price, rating, reviews, stock (real where ESCI-S has it)"
+    },
+    {
+      "dataset": "query_popularity",
+      "path": "data/synthetic/query_popularity.parquet",
+      "provenance": "simulated",
+      "rows": 130652,
+      "bytes": 2293531,
+      "purpose": "Zipf traffic share and head / torso / tail bucket"
+    },
+    {
+      "dataset": "searches",
+      "path": "data/synthetic/logs/searches",
+      "provenance": "simulated",
+      "rows": 37709580,
+      "bytes": 832313499,
+      "purpose": "Sessions, users, time, logging policy, outcomes"
+    },
+    {
+      "dataset": "impressions",
+      "path": "data/synthetic/logs/impressions",
+      "provenance": "simulated",
+      "rows": 634358747,
+      "bytes": 4332054070,
+      "purpose": "Position, click, cart, purchase, dwell, feedback, propensity"
+    },
+    {
+      "dataset": "query_doc_stats",
+      "path": "data/synthetic/logs/query_doc_stats.parquet",
+      "provenance": "simulated",
+      "rows": 2616646,
+      "bytes": 64729458,
+      "purpose": "Aggregated and IPS-weighted feedback per (query, product)"
+    },
+    {
+      "dataset": "replay",
+      "path": "data/synthetic/replay/requests.parquet",
+      "provenance": "simulated",
+      "rows": 10000000,
+      "bytes": 131735101,
+      "purpose": "24h load-test stream incl. one-off query variants"
+    },
+    {
+      "dataset": "scale_catalog",
+      "path": "data/scale/synthetic_catalog",
+      "provenance": "simulated",
+      "rows": 23185076,
+      "bytes": 4217599718,
+      "purpose": "Distractor products for 2.5M-25M doc latency tiers"
+    },
+    {
+      "dataset": "demo",
+      "path": "data/demo",
+      "provenance": "subset",
+      "rows": null,
+      "bytes": 129397113,
+      "purpose": "Portable slice of every dataset for the storefront demo"
+    }
+  ],
+  "catalog": {
+    "by_locale": [
+      {
+        "locale": "us",
+        "products": 1215854,
+        "sparse_share": 0.1928,
+        "title_only_share": 0.1054,
+        "brand_share": 0.9373,
+        "has_measure": 0.3217,
+        "has_pack_count": 0.1923,
+        "has_audience": 0.27,
+        "has_material": 0.4808,
+        "has_color": 0.6034,
+        "known_category_share": 0.7571,
+        "median_title_chars": 96.0,
+        "median_desc_bullet_chars": 737.0
+      },
+      {
+        "locale": "jp",
+        "products": 339059,
+        "sparse_share": 0.3042,
+        "title_only_share": 0.1783,
+        "brand_share": 0.8111,
+        "has_measure": 0.2803,
+        "has_pack_count": 0.156,
+        "has_audience": 0.1416,
+        "has_material": 0.3246,
+        "has_color": 0.4229,
+        "known_category_share": 0.6117,
+        "median_title_chars": 53.0,
+        "median_desc_bullet_chars": 170.0
+      },
+      {
+        "locale": "es",
+        "products": 260011,
+        "sparse_share": 0.2141,
+        "title_only_share": 0.1063,
+        "brand_share": 0.9506,
+        "has_measure": 0.3492,
+        "has_pack_count": 0.1194,
+        "has_audience": 0.23,
+        "has_material": 0.453,
+        "has_color": 0.5939,
+        "known_category_share": 0.6104,
+        "median_title_chars": 113.0,
+        "median_desc_bullet_chars": 802.0
+      }
+    ],
+    "categories": [
+      {
+        "category": "Unknown",
+        "products": 528237,
+        "share": 0.2911
+      },
+      {
+        "category": "Clothing, Shoes & Jewelry",
+        "products": 321504,
+        "share": 0.1771
+      },
+      {
+        "category": "Home & Kitchen",
+        "products": 183900,
+        "share": 0.1013
+      },
+      {
+        "category": "Books & Media",
+        "products": 171138,
+        "share": 0.0943
+      },
+      {
+        "category": "Electronics & Computers",
+        "products": 154822,
+        "share": 0.0853
+      },
+      {
+        "category": "Tools, Home Improvement & Garden",
+        "products": 76221,
+        "share": 0.042
+      },
+      {
+        "category": "Beauty & Personal Care",
+        "products": 64594,
+        "share": 0.0356
+      },
+      {
+        "category": "Toys, Games & Hobbies",
+        "products": 64130,
+        "share": 0.0353
+      },
+      {
+        "category": "Health & Household",
+        "products": 50460,
+        "share": 0.0278
+      },
+      {
+        "category": "Sports & Outdoors",
+        "products": 49404,
+        "share": 0.0272
+      },
+      {
+        "category": "Grocery & Gourmet Food",
+        "products": 40263,
+        "share": 0.0222
+      },
+      {
+        "category": "Automotive",
+        "products": 29492,
+        "share": 0.0162
+      },
+      {
+        "category": "Pet Supplies",
+        "products": 23684,
+        "share": 0.013
+      },
+      {
+        "category": "Office Products",
+        "products": 22110,
+        "share": 0.0122
+      },
+      {
+        "category": "Arts, Crafts & Sewing",
+        "products": 17021,
+        "share": 0.0094
+      },
+      {
+        "category": "Baby Products",
+        "products": 10105,
+        "share": 0.0056
+      },
+      {
+        "category": "Industrial & Scientific",
+        "products": 4937,
+        "share": 0.0027
+      },
+      {
+        "category": "Musical Instruments",
+        "products": 2902,
+        "share": 0.0016
+      }
+    ]
+  },
+  "category_model": {
+    "n_seed_labels": 4109,
+    "n_weak_labels": 57973,
+    "accuracy": 0.7686,
+    "macro_f1": 0.67,
+    "threshold": 0.5,
+    "accuracy_at_threshold": 0.9022,
+    "coverage_at_threshold": 0.7041,
+    "by_locale": {
+      "us": {
+        "n": 2762,
+        "accuracy": 0.7867,
+        "accuracy_at_tau": 0.8961,
+        "coverage_at_tau": 0.7455
+      },
+      "es": {
+        "n": 612,
+        "accuracy": 0.7173,
+        "accuracy_at_tau": 0.9008,
+        "coverage_at_tau": 0.5931
+      },
+      "jp": {
+        "n": 735,
+        "accuracy": 0.7429,
+        "accuracy_at_tau": 0.9299,
+        "coverage_at_tau": 0.6408
+      }
+    },
+    "coverage_accuracy_curve": [
+      {
+        "threshold": 0.0,
+        "coverage": 1.0,
+        "accuracy": 0.7686
+      },
+      {
+        "threshold": 0.3,
+        "coverage": 0.8966,
+        "accuracy": 0.8225
+      },
+      {
+        "threshold": 0.4,
+        "coverage": 0.8085,
+        "accuracy": 0.8582
+      },
+      {
+        "threshold": 0.45,
+        "coverage": 0.7564,
+        "accuracy": 0.8819
+      },
+      {
+        "threshold": 0.5,
+        "coverage": 0.7041,
+        "accuracy": 0.9022
+      },
+      {
+        "threshold": 0.6,
+        "coverage": 0.5958,
+        "accuracy": 0.9326
+      },
+      {
+        "threshold": 0.7,
+        "coverage": 0.4785,
+        "accuracy": 0.9552
+      },
+      {
+        "threshold": 0.8,
+        "coverage": 0.3212,
+        "accuracy": 0.9712
+      }
+    ]
+  },
+  "judgments": {
+    "by_split_locale": [
+      {
+        "split": "dev",
+        "locale": "es",
+        "queries": 1175,
+        "judgments": 27499,
+        "avg_candidates": 23.4,
+        "E": 0.5762,
+        "S": 0.2427,
+        "C": 0.0573,
+        "I": 0.1237
+      },
+      {
+        "split": "dev",
+        "locale": "jp",
+        "queries": 1327,
+        "judgments": 32049,
+        "avg_candidates": 24.2,
+        "E": 0.5959,
+        "S": 0.2565,
+        "C": 0.028,
+        "I": 0.1196
+      },
+      {
+        "split": "dev",
+        "locale": "us",
+        "queries": 7487,
+        "judgments": 138935,
+        "avg_candidates": 18.6,
+        "E": 0.7008,
+        "S": 0.1955,
+        "C": 0.0198,
+        "I": 0.0839
+      },
+      {
+        "split": "test",
+        "locale": "es",
+        "queries": 3844,
+        "judgments": 93347,
+        "avg_candidates": 24.3,
+        "E": 0.5319,
+        "S": 0.273,
+        "C": 0.0586,
+        "I": 0.1364
+      },
+      {
+        "split": "test",
+        "locale": "jp",
+        "queries": 4667,
+        "judgments": 118907,
+        "avg_candidates": 25.5,
+        "E": 0.5581,
+        "S": 0.276,
+        "C": 0.0375,
+        "I": 0.1284
+      },
+      {
+        "split": "test",
+        "locale": "us",
+        "queries": 22458,
+        "judgments": 425762,
+        "avg_candidates": 19.0,
+        "E": 0.6514,
+        "S": 0.2233,
+        "C": 0.0257,
+        "I": 0.0997
+      },
+      {
+        "split": "train",
+        "locale": "es",
+        "queries": 10161,
+        "judgments": 235564,
+        "avg_candidates": 23.2,
+        "E": 0.5797,
+        "S": 0.2415,
+        "C": 0.0571,
+        "I": 0.1216
+      },
+      {
+        "split": "train",
+        "locale": "jp",
+        "queries": 12133,
+        "judgments": 295097,
+        "avg_candidates": 24.3,
+        "E": 0.5865,
+        "S": 0.2538,
+        "C": 0.033,
+        "I": 0.1267
+      },
+      {
+        "split": "train",
+        "locale": "us",
+        "queries": 67400,
+        "judgments": 1254125,
+        "avg_candidates": 18.6,
+        "E": 0.696,
+        "S": 0.197,
+        "C": 0.021,
+        "I": 0.086
+      }
+    ],
+    "totals": {
+      "judgments": 2621285,
+      "queries": 130652,
+      "judged_docs": 1814883
+    }
+  },
+  "query_slices": {
+    "by_locale": [
+      {
+        "locale": "us",
+        "queries": 97345,
+        "ambiguous": 0.2622,
+        "underspecified": 0.1971,
+        "multi_intent": 0.0919,
+        "negation": 0.037,
+        "spec": 0.0642,
+        "brand": 0.1753,
+        "sparse_products": 0.1287,
+        "hard": 0.3066,
+        "all_exact": 0.2729
+      },
+      {
+        "locale": "jp",
+        "queries": 18127,
+        "ambiguous": 0.309,
+        "underspecified": 0.2683,
+        "multi_intent": 0.0606,
+        "negation": 0.139,
+        "spec": 0.0254,
+        "brand": 0.0434,
+        "sparse_products": 0.2589,
+        "hard": 0.5741,
+        "all_exact": 0.1684
+      },
+      {
+        "locale": "es",
+        "queries": 15180,
+        "ambiguous": 0.2657,
+        "underspecified": 0.2231,
+        "multi_intent": 0.0617,
+        "negation": 0.1062,
+        "spec": 0.0553,
+        "brand": 0.1775,
+        "sparse_products": 0.1756,
+        "hard": 0.5302,
+        "all_exact": 0.1887
+      }
+    ],
+    "test_counts": [
+      {
+        "locale": "us",
+        "queries": 22458,
+        "ambiguous": 5768,
+        "underspecified": 4290,
+        "multi_intent": 2055,
+        "negation": 955,
+        "spec": 1484,
+        "brand": 3943,
+        "sparse_products": 2930,
+        "hard": 8956,
+        "all_exact": 5326
+      },
+      {
+        "locale": "jp",
+        "queries": 4667,
+        "ambiguous": 1403,
+        "underspecified": 1199,
+        "multi_intent": 288,
+        "negation": 728,
+        "spec": 124,
+        "brand": 203,
+        "sparse_products": 1211,
+        "hard": 3123,
+        "all_exact": 628
+      },
+      {
+        "locale": "es",
+        "queries": 3844,
+        "ambiguous": 945,
+        "underspecified": 790,
+        "multi_intent": 226,
+        "negation": 460,
+        "spec": 223,
+        "brand": 655,
+        "sparse_products": 696,
+        "hard": 2417,
+        "all_exact": 568
+      }
+    ],
+    "length_buckets": [
+      {
+        "locale": "es",
+        "length_bucket": "long",
+        "queries": 869
+      },
+      {
+        "locale": "es",
+        "length_bucket": "medium",
+        "queries": 9436
+      },
+      {
+        "locale": "es",
+        "length_bucket": "short",
+        "queries": 4875
+      },
+      {
+        "locale": "jp",
+        "length_bucket": "long",
+        "queries": 1742
+      },
+      {
+        "locale": "jp",
+        "length_bucket": "medium",
+        "queries": 10850
+      },
+      {
+        "locale": "jp",
+        "length_bucket": "short",
+        "queries": 5535
+      },
+      {
+        "locale": "us",
+        "length_bucket": "long",
+        "queries": 9603
+      },
+      {
+        "locale": "us",
+        "length_bucket": "medium",
+        "queries": 61723
+      },
+      {
+        "locale": "us",
+        "length_bucket": "short",
+        "queries": 26019
+      }
+    ],
+    "sources": [
+      {
+        "source": "other",
+        "queries": 113656
+      },
+      {
+        "source": "negations",
+        "queries": 6964
+      },
+      {
+        "source": "parse_pattern",
+        "queries": 6083
+      },
+      {
+        "source": "behavioral",
+        "queries": 3780
+      },
+      {
+        "source": "nlqec",
+        "queries": 169
+      }
+    ],
+    "examples": [
+      {
+        "slice": "negation",
+        "examples": [
+          "1/4 sheet pan without sides",
+          "10 pool cover round without holes",
+          "a girl without freckles is night without stars",
+          "christianity without god",
+          "rooftop cargo bag without roof rack",
+          "wired routers for internet without wifi"
+        ]
+      },
+      {
+        "slice": "spec",
+        "examples": [
+          "11.5 x 8 clear plastic bux",
+          "12in cover",
+          "Pockets on both sides. Brown leather. Extra large. ",
+          "frame for 12 x 16 picture with mat",
+          "tens snap pads 2x2",
+          "tv stand for 65 inch tv"
+        ]
+      },
+      {
+        "slice": "ambiguous_multi_intent",
+        "examples": [
+          "Pockets on both sides. Brown leather. Extra large. ",
+          "antibacterial wipes for rear end",
+          "bedroom unicorn stuff",
+          "bendy and the ink machine",
+          "bracelet making kit age 8",
+          "chapstick holder"
+        ]
+      },
+      {
+        "slice": "sparse_products",
+        "examples": [
+          "a girl without freckles is night without stars",
+          "allergy to school",
+          "aquaman 4k",
+          "archer farms trail miz",
+          "basement window covers outside",
+          "bendy and the ink machine"
+        ]
+      },
+      {
+        "slice": "underspecified",
+        "examples": [
+          "alexa tablet",
+          "aviator chair",
+          "blower motor",
+          "bord games",
+          "bulk pens",
+          "cable modem"
+        ]
+      },
+      {
+        "slice": "brand",
+        "examples": [
+          "archer farms trail miz",
+          "bell sleeve blouses for women",
+          "bendy and the ink machine",
+          "bic bu3 red",
+          "cetaphil night",
+          "chaps slim fit men"
+        ]
+      }
+    ]
+  },
+  "graph": {
+    "edges": [
+      {
+        "relation": "co_exact",
+        "edges": 11082493,
+        "avg_support": 1.079,
+        "max_support": 29
+      },
+      {
+        "relation": "substitute",
+        "edges": 5458582,
+        "avg_support": 1.022,
+        "max_support": 12
+      },
+      {
+        "relation": "complement",
+        "edges": 758695,
+        "avg_support": 1.013,
+        "max_support": 8
+      }
+    ],
+    "related_queries": {
+      "pairs": 781312,
+      "queries": 95177
+    },
+    "top_category_complements": [
+      {
+        "src_category": "Arts, Crafts & Sewing",
+        "dst_category": "Home & Kitchen",
+        "share": 0.042
+      },
+      {
+        "src_category": "Automotive",
+        "dst_category": "Tools, Home Improvement & Garden",
+        "share": 0.055
+      },
+      {
+        "src_category": "Baby Products",
+        "dst_category": "Home & Kitchen",
+        "share": 0.101
+      },
+      {
+        "src_category": "Beauty & Personal Care",
+        "dst_category": "Tools, Home Improvement & Garden",
+        "share": 0.022
+      },
+      {
+        "src_category": "Books & Media",
+        "dst_category": "Toys, Games & Hobbies",
+        "share": 0.106
+      },
+      {
+        "src_category": "Clothing, Shoes & Jewelry",
+        "dst_category": "Sports & Outdoors",
+        "share": 0.026
+      },
+      {
+        "src_category": "Electronics & Computers",
+        "dst_category": "Books & Media",
+        "share": 0.012
+      },
+      {
+        "src_category": "Grocery & Gourmet Food",
+        "dst_category": "Home & Kitchen",
+        "share": 0.192
+      },
+      {
+        "src_category": "Health & Household",
+        "dst_category": "Home & Kitchen",
+        "share": 0.071
+      },
+      {
+        "src_category": "Home & Kitchen",
+        "dst_category": "Tools, Home Improvement & Garden",
+        "share": 0.047
+      },
+      {
+        "src_category": "Industrial & Scientific",
+        "dst_category": "Tools, Home Improvement & Garden",
+        "share": 0.1
+      },
+      {
+        "src_category": "Musical Instruments",
+        "dst_category": "Electronics & Computers",
+        "share": 0.353
+      },
+      {
+        "src_category": "Office Products",
+        "dst_category": "Home & Kitchen",
+        "share": 0.056
+      },
+      {
+        "src_category": "Pet Supplies",
+        "dst_category": "Home & Kitchen",
+        "share": 0.033
+      },
+      {
+        "src_category": "Sports & Outdoors",
+        "dst_category": "Clothing, Shoes & Jewelry",
+        "share": 0.051
+      },
+      {
+        "src_category": "Tools, Home Improvement & Garden",
+        "dst_category": "Home & Kitchen",
+        "share": 0.061
+      },
+      {
+        "src_category": "Toys, Games & Hobbies",
+        "dst_category": "Electronics & Computers",
+        "share": 0.061
+      }
+    ]
+  },
+  "commerce": [
+    {
+      "locale": "es",
+      "currency": "EUR",
+      "price_p10": 9.99,
+      "price_median": 32.99,
+      "price_p90": 114.99,
+      "avg_stars": 4.21,
+      "median_ratings": 43.0,
+      "in_stock_share": 0.9396,
+      "real_rows": 576
+    },
+    {
+      "locale": "jp",
+      "currency": "JPY",
+      "price_p10": 820.0,
+      "price_median": 2500.0,
+      "price_p90": 7990.0,
+      "avg_stars": 4.12,
+      "median_ratings": 60.0,
+      "in_stock_share": 0.9404,
+      "real_rows": 710
+    },
+    {
+      "locale": "us",
+      "currency": "USD",
+      "price_p10": 9.99,
+      "price_median": 29.99,
+      "price_p90": 96.99,
+      "avg_stars": 4.4,
+      "median_ratings": 362.0,
+      "in_stock_share": 0.9399,
+      "real_rows": 2841
+    }
+  ],
+  "traffic": {
+    "totals": {
+      "searches": 37709580,
+      "sessions": 30000000,
+      "users": 3463744,
+      "queries_with_traffic": 130652,
+      "first_day": "2026-05-31",
+      "last_day": "2026-07-31",
+      "abandonment_rate": 0.3224,
+      "reformulation_share": 0.2044,
+      "search_ctr": 0.6776,
+      "search_add_to_cart_rate": 0.2286,
+      "search_conversion_rate": 0.1424
+    },
+    "impressions": {
+      "impressions": 634358747,
+      "ctr": 0.0629,
+      "explicit_feedback": 645093
+    },
+    "ctr_by_position": [
+      {
+        "position": 1,
+        "ctr": 0.3284
+      },
+      {
+        "position": 2,
+        "ctr": 0.1606
+      },
+      {
+        "position": 3,
+        "ctr": 0.1052
+      },
+      {
+        "position": 4,
+        "ctr": 0.0774
+      },
+      {
+        "position": 5,
+        "ctr": 0.0616
+      },
+      {
+        "position": 6,
+        "ctr": 0.0502
+      },
+      {
+        "position": 7,
+        "ctr": 0.0432
+      },
+      {
+        "position": 8,
+        "ctr": 0.037
+      },
+      {
+        "position": 9,
+        "ctr": 0.0331
+      },
+      {
+        "position": 10,
+        "ctr": 0.0286
+      },
+      {
+        "position": 11,
+        "ctr": 0.0254
+      },
+      {
+        "position": 12,
+        "ctr": 0.0228
+      },
+      {
+        "position": 13,
+        "ctr": 0.021
+      },
+      {
+        "position": 14,
+        "ctr": 0.0184
+      },
+      {
+        "position": 15,
+        "ctr": 0.0171
+      },
+      {
+        "position": 16,
+        "ctr": 0.0151
+      },
+      {
+        "position": 17,
+        "ctr": 0.0165
+      },
+      {
+        "position": 18,
+        "ctr": 0.0148
+      },
+      {
+        "position": 19,
+        "ctr": 0.0136
+      },
+      {
+        "position": 20,
+        "ctr": 0.014
+      }
+    ],
+    "ctr_by_label": [
+      {
+        "esci_label": "C",
+        "ctr": 0.0089,
+        "cart_rate": 0.00159,
+        "purchase_rate": 0.0008
+      },
+      {
+        "esci_label": "E",
+        "ctr": 0.0797,
+        "cart_rate": 0.01989,
+        "purchase_rate": 0.01192
+      },
+      {
+        "esci_label": "I",
+        "ctr": 0.0023,
+        "cart_rate": 5e-05,
+        "purchase_rate": 1e-05
+      },
+      {
+        "esci_label": "S",
+        "ctr": 0.0265,
+        "cart_rate": 0.00399,
+        "purchase_rate": 0.00197
+      }
+    ],
+    "daily": [
+      {
+        "day": "2026-05-31",
+        "searches": 17219
+      },
+      {
+        "day": "2026-06-01",
+        "searches": 433715
+      },
+      {
+        "day": "2026-06-02",
+        "searches": 573368
+      },
+      {
+        "day": "2026-06-03",
+        "searches": 573242
+      },
+      {
+        "day": "2026-06-04",
+        "searches": 573437
+      },
+      {
+        "day": "2026-06-05",
+        "searches": 577666
+      },
+      {
+        "day": "2026-06-06",
+        "searches": 641198
+      },
+      {
+        "day": "2026-06-07",
+        "searches": 659323
+      },
+      {
+        "day": "2026-06-08",
+        "searches": 598988
+      },
+      {
+        "day": "2026-06-09",
+        "searches": 579529
+      },
+      {
+        "day": "2026-06-10",
+        "searches": 580807
+      },
+      {
+        "day": "2026-06-11",
+        "searches": 582698
+      },
+      {
+        "day": "2026-06-12",
+        "searches": 585770
+      },
+      {
+        "day": "2026-06-13",
+        "searches": 650949
+      },
+      {
+        "day": "2026-06-14",
+        "searches": 670134
+      },
+      {
+        "day": "2026-06-15",
+        "searches": 607615
+      },
+      {
+        "day": "2026-06-16",
+        "searches": 587059
+      },
+      {
+        "day": "2026-06-17",
+        "searches": 587627
+      },
+      {
+        "day": "2026-06-18",
+        "searches": 589549
+      },
+      {
+        "day": "2026-06-19",
+        "searches": 593756
+      },
+      {
+        "day": "2026-06-20",
+        "searches": 659524
+      },
+      {
+        "day": "2026-06-21",
+        "searches": 678548
+      },
+      {
+        "day": "2026-06-22",
+        "searches": 615360
+      },
+      {
+        "day": "2026-06-23",
+        "searches": 595755
+      },
+      {
+        "day": "2026-06-24",
+        "searches": 594267
+      },
+      {
+        "day": "2026-06-25",
+        "searches": 597674
+      },
+      {
+        "day": "2026-06-26",
+        "searches": 603417
+      },
+      {
+        "day": "2026-06-27",
+        "searches": 668616
+      },
+      {
+        "day": "2026-06-28",
+        "searches": 687147
+      },
+      {
+        "day": "2026-06-29",
+        "searches": 622852
+      },
+      {
+        "day": "2026-06-30",
+        "searches": 604052
+      },
+      {
+        "day": "2026-07-01",
+        "searches": 605246
+      },
+      {
+        "day": "2026-07-02",
+        "searches": 604410
+      },
+      {
+        "day": "2026-07-03",
+        "searches": 608013
+      },
+      {
+        "day": "2026-07-04",
+        "searches": 678039
+      },
+      {
+        "day": "2026-07-05",
+        "searches": 696855
+      },
+      {
+        "day": "2026-07-06",
+        "searches": 633658
+      },
+      {
+        "day": "2026-07-07",
+        "searches": 611366
+      },
+      {
+        "day": "2026-07-08",
+        "searches": 612012
+      },
+      {
+        "day": "2026-07-09",
+        "searches": 613565
+      },
+      {
+        "day": "2026-07-10",
+        "searches": 616377
+      },
+      {
+        "day": "2026-07-11",
+        "searches": 686457
+      },
+      {
+        "day": "2026-07-12",
+        "searches": 707480
+      },
+      {
+        "day": "2026-07-13",
+        "searches": 640291
+      },
+      {
+        "day": "2026-07-14",
+        "searches": 619547
+      },
+      {
+        "day": "2026-07-15",
+        "searches": 620489
+      },
+      {
+        "day": "2026-07-16",
+        "searches": 622500
+      },
+      {
+        "day": "2026-07-17",
+        "searches": 625359
+      },
+      {
+        "day": "2026-07-18",
+        "searches": 695550
+      },
+      {
+        "day": "2026-07-19",
+        "searches": 716129
+      },
+      {
+        "day": "2026-07-20",
+        "searches": 647478
+      },
+      {
+        "day": "2026-07-21",
+        "searches": 629588
+      },
+      {
+        "day": "2026-07-22",
+        "searches": 629272
+      },
+      {
+        "day": "2026-07-23",
+        "searches": 630536
+      },
+      {
+        "day": "2026-07-24",
+        "searches": 633701
+      },
+      {
+        "day": "2026-07-25",
+        "searches": 704780
+      },
+      {
+        "day": "2026-07-26",
+        "searches": 724793
+      },
+      {
+        "day": "2026-07-27",
+        "searches": 658621
+      },
+      {
+        "day": "2026-07-28",
+        "searches": 636603
+      },
+      {
+        "day": "2026-07-29",
+        "searches": 637269
+      },
+      {
+        "day": "2026-07-30",
+        "searches": 619565
+      },
+      {
+        "day": "2026-07-31",
+        "searches": 153170
+      }
+    ],
+    "by_hour_utc": [
+      {
+        "hour_utc": 0,
+        "locale": "es",
+        "searches": 761
+      },
+      {
+        "hour_utc": 0,
+        "locale": "jp",
+        "searches": 13339
+      },
+      {
+        "hour_utc": 0,
+        "locale": "us",
+        "searches": 53848
+      },
+      {
+        "hour_utc": 1,
+        "locale": "es",
+        "searches": 681
+      },
+      {
+        "hour_utc": 1,
+        "locale": "jp",
+        "searches": 16393
+      },
+      {
+        "hour_utc": 1,
+        "locale": "us",
+        "searches": 59567
+      },
+      {
+        "hour_utc": 2,
+        "locale": "es",
+        "searches": 658
+      },
+      {
+        "hour_utc": 2,
+        "locale": "jp",
+        "searches": 17678
+      },
+      {
+        "hour_utc": 2,
+        "locale": "us",
+        "searches": 62658
+      },
+      {
+        "hour_utc": 3,
+        "locale": "es",
+        "searches": 919
+      },
+      {
+        "hour_utc": 3,
+        "locale": "jp",
+        "searches": 19255
+      },
+      {
+        "hour_utc": 3,
+        "locale": "us",
+        "searches": 57844
+      },
+      {
+        "hour_utc": 4,
+        "locale": "es",
+        "searches": 1616
+      },
+      {
+        "hour_utc": 4,
+        "locale": "jp",
+        "searches": 18604
+      },
+      {
+        "hour_utc": 4,
+        "locale": "us",
+        "searches": 43525
+      },
+      {
+        "hour_utc": 5,
+        "locale": "es",
+        "searches": 3051
+      },
+      {
+        "hour_utc": 5,
+        "locale": "jp",
+        "searches": 17471
+      },
+      {
+        "hour_utc": 5,
+        "locale": "us",
+        "searches": 25575
+      },
+      {
+        "hour_utc": 6,
+        "locale": "es",
+        "searches": 4985
+      },
+      {
+        "hour_utc": 6,
+        "locale": "jp",
+        "searches": 17168
+      },
+      {
+        "hour_utc": 6,
+        "locale": "us",
+        "searches": 13421
+      },
+      {
+        "hour_utc": 7,
+        "locale": "es",
+        "searches": 6656
+      },
+      {
+        "hour_utc": 7,
+        "locale": "jp",
+        "searches": 17676
+      },
+      {
+        "hour_utc": 7,
+        "locale": "us",
+        "searches": 7919
+      },
+      {
+        "hour_utc": 8,
+        "locale": "es",
+        "searches": 7864
+      },
+      {
+        "hour_utc": 8,
+        "locale": "jp",
+        "searches": 18742
+      },
+      {
+        "hour_utc": 8,
+        "locale": "us",
+        "searches": 4551
+      },
+      {
+        "hour_utc": 9,
+        "locale": "es",
+        "searches": 8636
+      },
+      {
+        "hour_utc": 9,
+        "locale": "jp",
+        "searches": 20219
+      },
+      {
+        "hour_utc": 9,
+        "locale": "us",
+        "searches": 3355
+      },
+      {
+        "hour_utc": 10,
+        "locale": "es",
+        "searches": 9354
+      },
+      {
+        "hour_utc": 10,
+        "locale": "jp",
+        "searches": 22819
+      },
+      {
+        "hour_utc": 10,
+        "locale": "us",
+        "searches": 3286
+      },
+      {
+        "hour_utc": 11,
+        "locale": "es",
+        "searches": 8956
+      },
+      {
+        "hour_utc": 11,
+        "locale": "jp",
+        "searches": 23710
+      },
+      {
+        "hour_utc": 11,
+        "locale": "us",
+        "searches": 4505
+      },
+      {
+        "hour_utc": 12,
+        "locale": "es",
+        "searches": 8570
+      },
+      {
+        "hour_utc": 12,
+        "locale": "jp",
+        "searches": 22239
+      },
+      {
+        "hour_utc": 12,
+        "locale": "us",
+        "searches": 8815
+      },
+      {
+        "hour_utc": 13,
+        "locale": "es",
+        "searches": 8181
+      },
+      {
+        "hour_utc": 13,
+        "locale": "jp",
+        "searches": 16768
+      },
+      {
+        "hour_utc": 13,
+        "locale": "us",
+        "searches": 16956
+      },
+      {
+        "hour_utc": 14,
+        "locale": "es",
+        "searches": 8555
+      },
+      {
+        "hour_utc": 14,
+        "locale": "jp",
+        "searches": 9972
+      },
+      {
+        "hour_utc": 14,
+        "locale": "us",
+        "searches": 26900
+      },
+      {
+        "hour_utc": 15,
+        "locale": "es",
+        "searches": 9141
+      },
+      {
+        "hour_utc": 15,
+        "locale": "jp",
+        "searches": 5176
+      },
+      {
+        "hour_utc": 15,
+        "locale": "us",
+        "searches": 36136
+      },
+      {
+        "hour_utc": 16,
+        "locale": "es",
+        "searches": 9829
+      },
+      {
+        "hour_utc": 16,
+        "locale": "jp",
+        "searches": 2970
+      },
+      {
+        "hour_utc": 16,
+        "locale": "us",
+        "searches": 42571
+      },
+      {
+        "hour_utc": 17,
+        "locale": "es",
+        "searches": 10912
+      },
+      {
+        "hour_utc": 17,
+        "locale": "jp",
+        "searches": 1709
+      },
+      {
+        "hour_utc": 17,
+        "locale": "us",
+        "searches": 47279
+      },
+      {
+        "hour_utc": 18,
+        "locale": "es",
+        "searches": 11742
+      },
+      {
+        "hour_utc": 18,
+        "locale": "jp",
+        "searches": 1390
+      },
+      {
+        "hour_utc": 18,
+        "locale": "us",
+        "searches": 49983
+      },
+      {
+        "hour_utc": 19,
+        "locale": "es",
+        "searches": 10776
+      },
+      {
+        "hour_utc": 19,
+        "locale": "jp",
+        "searches": 1290
+      },
+      {
+        "hour_utc": 19,
+        "locale": "us",
+        "searches": 47513
+      },
+      {
+        "hour_utc": 20,
+        "locale": "es",
+        "searches": 8038
+      },
+      {
+        "hour_utc": 20,
+        "locale": "jp",
+        "searches": 1659
+      },
+      {
+        "hour_utc": 20,
+        "locale": "us",
+        "searches": 45676
+      },
+      {
+        "hour_utc": 21,
+        "locale": "es",
+        "searches": 4764
+      },
+      {
+        "hour_utc": 21,
+        "locale": "jp",
+        "searches": 3543
+      },
+      {
+        "hour_utc": 21,
+        "locale": "us",
+        "searches": 44768
+      },
+      {
+        "hour_utc": 22,
+        "locale": "es",
+        "searches": 2562
+      },
+      {
+        "hour_utc": 22,
+        "locale": "jp",
+        "searches": 6294
+      },
+      {
+        "hour_utc": 22,
+        "locale": "us",
+        "searches": 46280
+      },
+      {
+        "hour_utc": 23,
+        "locale": "es",
+        "searches": 1440
+      },
+      {
+        "hour_utc": 23,
+        "locale": "jp",
+        "searches": 10214
+      },
+      {
+        "hour_utc": 23,
+        "locale": "us",
+        "searches": 49503
+      }
+    ],
+    "popularity_buckets": [
+      {
+        "traffic_bucket": "torso",
+        "queries": 25435,
+        "traffic_share": 0.3999,
+        "test_queries": 5825
+      },
+      {
+        "traffic_bucket": "head",
+        "queries": 778,
+        "traffic_share": 0.3001,
+        "test_queries": 195
+      },
+      {
+        "traffic_bucket": "tail",
+        "queries": 104439,
+        "traffic_share": 0.3,
+        "test_queries": 24949
+      }
+    ],
+    "searches_per_query_quantiles": {
+      "q": [
+        66.0,
+        120.0,
+        411.0,
+        2420.4700000000157
+      ],
+      "max": 659081
+    }
+  },
+  "replay": {
+    "requests": 10000000,
+    "unique_queries": 130652,
+    "ideal_cache_hit_rate": 0.9869,
+    "start": "2026-07-31 15:00:00.039000",
+    "end": "2026-08-02 05:59:59.979000",
+    "variants": [
+      {
+        "variant": "original",
+        "requests": 6499953
+      },
+      {
+        "variant": "typo",
+        "requests": 1570692
+      },
+      {
+        "variant": "modifier",
+        "requests": 699051
+      },
+      {
+        "variant": "case_space",
+        "requests": 525395
+      },
+      {
+        "variant": "token_drop",
+        "requests": 469599
+      },
+      {
+        "variant": "reorder",
+        "requests": 235310
+      }
+    ],
+    "hit_rate_raw_vs_normalised": {
+      "raw_text": 0.8472,
+      "normalised": 0.8598
+    },
+    "variant_examples": [
+      {
+        "variant": "token_drop",
+        "original": "long dress sequin",
+        "typed": "long dress"
+      },
+      {
+        "variant": "case_space",
+        "original": "half gallon water bottle",
+        "typed": "HALF GALLON WATER BOTTLE"
+      },
+      {
+        "variant": "typo",
+        "original": "girls underwear size 10",
+        "typed": "girls underwear ssize 10"
+      },
+      {
+        "variant": "modifier",
+        "original": "brooks glycerin 15 womens",
+        "typed": "large brooks glycerin 15 womens"
+      },
+      {
+        "variant": "reorder",
+        "original": "peel and stick wall",
+        "typed": "peel and wall stick"
+      }
+    ],
+    "requests_per_second_by_minute": {
+      "min_rps": 2.2,
+      "median_rps": 77.0,
+      "peak_rps": 142.9
+    }
+  },
+  "scale": {
+    "real_catalog_rows": 1814924,
+    "shard_rows": 1000000,
+    "tiers": [
+      {
+        "total_docs": 2500000,
+        "real_docs": 1814924,
+        "synthetic_docs": 685076,
+        "synthetic_shards": 1
+      },
+      {
+        "total_docs": 5000000,
+        "real_docs": 1814924,
+        "synthetic_docs": 3185076,
+        "synthetic_shards": 4
+      },
+      {
+        "total_docs": 10000000,
+        "real_docs": 1814924,
+        "synthetic_docs": 8185076,
+        "synthetic_shards": 9
+      },
+      {
+        "total_docs": 25000000,
+        "real_docs": 1814924,
+        "synthetic_docs": 23185076,
+        "synthetic_shards": 24
+      }
+    ],
+    "note": "Tier T = full real catalog + the first (T - real) synthetic rows in shard order. Synthetic docs are unjudged distractors for latency/throughput/cost scaling only."
+  },
+  "footprint_bytes": {
+    "raw": 1172396700,
+    "processed": 1512362637,
+    "synthetic": 5385517129,
+    "scale": 4217600497
+  },
+  "stage_runs": {
+    "taxonomy": {
+      "stage": "taxonomy",
+      "rows": 62082,
+      "accuracy": 0.7686,
+      "coverage": 0.7041,
+      "seconds": 295.33,
+      "rows_per_sec": 210,
+      "finished_at": "2026-09-18T22:58:48"
+    },
+    "catalog": {
+      "stage": "catalog",
+      "rows": 1814924,
+      "bytes": 1131470978,
+      "seconds": 986.36,
+      "rows_per_sec": 1840,
+      "finished_at": "2026-09-18T23:15:16"
+    },
+    "judgments": {
+      "stage": "judgments",
+      "rows": 2621285,
+      "queries": 130652,
+      "split_queries": {
+        "train": 89694,
+        "dev": 9989,
+        "test": 30969
+      },
+      "slice_rates": {
+        "slice_underspecified": 0.21,
+        "slice_multi_intent": 0.0841,
+        "slice_negation": 0.0592,
+        "slice_spec": 0.0578,
+        "slice_brand": 0.1573,
+        "slice_sparse_products": 0.1522,
+        "slice_hard": 0.3697,
+        "slice_all_exact": 0.2486,
+        "slice_ambiguous": 0.2691
+      },
+      "seconds": 68.65,
+      "rows_per_sec": 38183,
+      "finished_at": "2026-09-18T23:20:18"
+    },
+    "graph": {
+      "stage": "graph",
+      "rows": 17299770,
+      "edges": {
+        "co_exact": 11082493,
+        "complement": 758695,
+        "substitute": 5458582
+      },
+      "related_query_pairs": 781312,
+      "queries_with_related": 95177,
+      "bytes": 263751276,
+      "seconds": 19.73,
+      "rows_per_sec": 876825,
+      "finished_at": "2026-09-18T23:20:40"
+    },
+    "sim_commerce": {
+      "stage": "sim_commerce",
+      "rows": 1814924,
+      "real_rows": 4127,
+      "median_price": {
+        "jp": 2500.0,
+        "es": 32.99,
+        "us": 29.99
+      },
+      "seconds": 4.65,
+      "rows_per_sec": 390306,
+      "finished_at": "2026-09-18T23:20:51"
+    },
+    "sim_traffic": {
+      "stage": "sim_traffic",
+      "shards": 120,
+      "n_sessions": 30000000,
+      "rows": 634358747,
+      "searches": 37709580,
+      "impressions": 634358747,
+      "bytes": 5229097027,
+      "seconds": 896.04,
+      "rows_per_sec": 707958,
+      "finished_at": "2026-09-18T23:37:39"
+    },
+    "scale": {
+      "stage": "scale",
+      "rows": 23185076,
+      "tiers": [
+        2500000,
+        5000000,
+        10000000,
+        25000000
+      ],
+      "bytes": 4217600497,
+      "seconds": 379.39,
+      "rows_per_sec": 61111,
+      "finished_at": "2026-09-18T23:30:48"
+    },
+    "sim_replay": {
+      "stage": "sim_replay",
+      "rows": 10000000,
+      "unique_query_ids": 130652,
+      "unique_texts": 1527551,
+      "ideal_hit_rate_raw_text": 0.8472,
+      "ideal_hit_rate_normalised": 0.8598,
+      "peak_rps": 142,
+      "seconds": 28.03,
+      "rows_per_sec": 356760,
+      "finished_at": "2026-09-18T23:42:29"
+    },
+    "demo": {
+      "stage": "demo",
+      "rows": 1230808,
+      "files": {
+        "queries.parquet": 3025,
+        "judgments.parquet": 57075,
+        "catalog.parquet": 150663,
+        "product_commerce.parquet": 150663,
+        "product_edges.parquet": 588641,
+        "related_queries.parquet": 20492,
+        "query_doc_stats.parquet": 56958,
+        "query_popularity.parquet": 3025,
+        "replay_sample.parquet": 200000,
+        "category_complements.parquet": 266
+      },
+      "bytes": 129397113,
+      "seconds": 5.99,
+      "rows_per_sec": 205477,
+      "finished_at": "2026-09-18T23:39:20"
+    }
+  },
+  "validation": {
+    "checks": 23,
+    "failed": 0,
+    "results": [
+      {
+        "check": "catalog.row_count_matches_esci",
+        "passed": true,
+        "detail": {
+          "rows": 1814924,
+          "expected": 1814924
+        }
+      },
+      {
+        "check": "catalog.doc_id_unique",
+        "passed": true,
+        "detail": {
+          "duplicates": 0
+        }
+      },
+      {
+        "check": "catalog.titles_present",
+        "passed": true,
+        "detail": {
+          "empty_titles": 1
+        }
+      },
+      {
+        "check": "catalog.category_coverage",
+        "passed": true,
+        "detail": {
+          "known_category_share": 0.7089
+        }
+      },
+      {
+        "check": "judgments.row_count_after_leak_fix",
+        "passed": true,
+        "detail": {
+          "rows": 2621285,
+          "esci_rows": 2621288,
+          "dropped_train_rows_of_cross_split_queries": 3
+        }
+      },
+      {
+        "check": "judgments.pair_unique",
+        "passed": true,
+        "detail": {
+          "duplicates": 0
+        }
+      },
+      {
+        "check": "judgments.docs_in_catalog",
+        "passed": true,
+        "detail": {
+          "orphans": 0
+        }
+      },
+      {
+        "check": "splits.no_query_in_two_splits",
+        "passed": true,
+        "detail": {
+          "leaking_queries": 0
+        }
+      },
+      {
+        "check": "splits.test_is_esci_test",
+        "passed": true,
+        "detail": {
+          "mismatches": 0
+        }
+      },
+      {
+        "check": "splits.dev_fraction",
+        "passed": true,
+        "detail": {
+          "min_locale_dev_share": 0.0986,
+          "max_locale_dev_share": 0.1037
+        }
+      },
+      {
+        "check": "queries.one_row_per_query",
+        "passed": true,
+        "detail": {
+          "diff": 0
+        }
+      },
+      {
+        "check": "queries.slices_non_degenerate",
+        "passed": true,
+        "detail": {
+          "min_rate": 0.0578,
+          "max_rate": 0.2691
+        }
+      },
+      {
+        "check": "graph.no_self_edges",
+        "passed": true,
+        "detail": {
+          "self_edges": 0
+        }
+      },
+      {
+        "check": "graph.edges_in_catalog",
+        "passed": true,
+        "detail": {
+          "orphans": 0
+        }
+      },
+      {
+        "check": "commerce.one_row_per_doc",
+        "passed": true,
+        "detail": {
+          "rows": 1814924,
+          "distinct": 1814924
+        }
+      },
+      {
+        "check": "commerce.valid_ranges",
+        "passed": true,
+        "detail": {
+          "bad_price": 0,
+          "bad_stars": 0
+        }
+      },
+      {
+        "check": "logs.search_id_unique",
+        "passed": true,
+        "detail": {
+          "duplicates": 0
+        }
+      },
+      {
+        "check": "logs.funnel_consistent",
+        "passed": true,
+        "detail": {
+          "violations": 0
+        }
+      },
+      {
+        "check": "logs.position_range",
+        "passed": true,
+        "detail": {
+          "min": 1,
+          "max": 20
+        }
+      },
+      {
+        "check": "logs.ctr_monotone_in_label",
+        "passed": true,
+        "detail": {
+          "C": 0.0084,
+          "E": 0.0797,
+          "I": 0.0024,
+          "S": 0.0265
+        }
+      },
+      {
+        "check": "logs.explore_share",
+        "passed": true,
+        "detail": {
+          "explore_share": 0.05
+        }
+      },
+      {
+        "check": "replay.row_count",
+        "passed": true,
+        "detail": {
+          "rows": 10000000
+        }
+      },
+      {
+        "check": "scale.ids_unique_and_disjoint",
+        "passed": true,
+        "detail": {
+          "duplicates": 0,
+          "non_synthetic_ids": 0
+        }
+      }
+    ]
+  }
+}

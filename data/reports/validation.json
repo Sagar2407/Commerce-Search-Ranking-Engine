@@ -1,0 +1,175 @@
+[
+  {
+    "check": "catalog.row_count_matches_esci",
+    "passed": true,
+    "detail": {
+      "rows": 1814924,
+      "expected": 1814924
+    }
+  },
+  {
+    "check": "catalog.doc_id_unique",
+    "passed": true,
+    "detail": {
+      "duplicates": 0
+    }
+  },
+  {
+    "check": "catalog.titles_present",
+    "passed": true,
+    "detail": {
+      "empty_titles": 1
+    }
+  },
+  {
+    "check": "catalog.category_coverage",
+    "passed": true,
+    "detail": {
+      "known_category_share": 0.7089
+    }
+  },
+  {
+    "check": "judgments.row_count_after_leak_fix",
+    "passed": true,
+    "detail": {
+      "rows": 2621285,
+      "esci_rows": 2621288,
+      "dropped_train_rows_of_cross_split_queries": 3
+    }
+  },
+  {
+    "check": "judgments.pair_unique",
+    "passed": true,
+    "detail": {
+      "duplicates": 0
+    }
+  },
+  {
+    "check": "judgments.docs_in_catalog",
+    "passed": true,
+    "detail": {
+      "orphans": 0
+    }
+  },
+  {
+    "check": "splits.no_query_in_two_splits",
+    "passed": true,
+    "detail": {
+      "leaking_queries": 0
+    }
+  },
+  {
+    "check": "splits.test_is_esci_test",
+    "passed": true,
+    "detail": {
+      "mismatches": 0
+    }
+  },
+  {
+    "check": "splits.dev_fraction",
+    "passed": true,
+    "detail": {
+      "min_locale_dev_share": 0.0986,
+      "max_locale_dev_share": 0.1037
+    }
+  },
+  {
+    "check": "queries.one_row_per_query",
+    "passed": true,
+    "detail": {
+      "diff": 0
+    }
+  },
+  {
+    "check": "queries.slices_non_degenerate",
+    "passed": true,
+    "detail": {
+      "min_rate": 0.0578,
+      "max_rate": 0.2691
+    }
+  },
+  {
+    "check": "graph.no_self_edges",
+    "passed": true,
+    "detail": {
+      "self_edges": 0
+    }
+  },
+  {
+    "check": "graph.edges_in_catalog",
+    "passed": true,
+    "detail": {
+      "orphans": 0
+    }
+  },
+  {
+    "check": "commerce.one_row_per_doc",
+    "passed": true,
+    "detail": {
+      "rows": 1814924,
+      "distinct": 1814924
+    }
+  },
+  {
+    "check": "commerce.valid_ranges",
+    "passed": true,
+    "detail": {
+      "bad_price": 0,
+      "bad_stars": 0
+    }
+  },
+  {
+    "check": "logs.search_id_unique",
+    "passed": true,
+    "detail": {
+      "duplicates": 0
+    }
+  },
+  {
+    "check": "logs.funnel_consistent",
+    "passed": true,
+    "detail": {
+      "violations": 0
+    }
+  },
+  {
+    "check": "logs.position_range",
+    "passed": true,
+    "detail": {
+      "min": 1,
+      "max": 20
+    }
+  },
+  {
+    "check": "logs.ctr_monotone_in_label",
+    "passed": true,
+    "detail": {
+      "C": 0.0084,
+      "E": 0.0797,
+      "I": 0.0024,
+      "S": 0.0265
+    }
+  },
+  {
+    "check": "logs.explore_share",
+    "passed": true,
+    "detail": {
+      "explore_share": 0.05
+    }
+  },
+  {
+    "check": "replay.row_count",
+    "passed": true,
+    "detail": {
+      "rows": 10000000
+    }
+  },
+  {
+    "check": "scale.ids_unique_and_disjoint",
+    "passed": true,
+    "detail": {
+      "duplicates": 0,
+      "non_synthetic_ids": 0
+    }
+  }
+]

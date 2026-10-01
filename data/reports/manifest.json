@@ -1,0 +1,149 @@
+{
+  "taxonomy": {
+    "stage": "taxonomy",
+    "rows": 62082,
+    "accuracy": 0.7686,
+    "coverage": 0.7041,
+    "seconds": 295.33,
+    "rows_per_sec": 210,
+    "finished_at": "2026-09-18T22:58:48"
+  },
+  "catalog": {
+    "stage": "catalog",
+    "rows": 1814924,
+    "bytes": 1131470978,
+    "seconds": 986.36,
+    "rows_per_sec": 1840,
+    "finished_at": "2026-09-18T23:15:16"
+  },
+  "judgments": {
+    "stage": "judgments",
+    "rows": 2621285,
+    "queries": 130652,
+    "split_queries": {
+      "train": 89694,
+      "dev": 9989,
+      "test": 30969
+    },
+    "slice_rates": {
+      "slice_underspecified": 0.21,
+      "slice_multi_intent": 0.0841,
+      "slice_negation": 0.0592,
+      "slice_spec": 0.0578,
+      "slice_brand": 0.1573,
+      "slice_sparse_products": 0.1522,
+      "slice_hard": 0.3697,
+      "slice_all_exact": 0.2486,
+      "slice_ambiguous": 0.2691
+    },
+    "seconds": 68.65,
+    "rows_per_sec": 38183,
+    "finished_at": "2026-09-18T23:20:18"
+  },
+  "graph": {
+    "stage": "graph",
+    "rows": 17299770,
+    "edges": {
+      "co_exact": 11082493,
+      "complement": 758695,
+      "substitute": 5458582
+    },
+    "related_query_pairs": 781312,
+    "queries_with_related": 95177,
+    "bytes": 263751276,
+    "seconds": 19.73,
+    "rows_per_sec": 876825,
+    "finished_at": "2026-09-18T23:20:40"
+  },
+  "sim_commerce": {
+    "stage": "sim_commerce",
+    "rows": 1814924,
+    "real_rows": 4127,
+    "median_price": {
+      "jp": 2500.0,
+      "es": 32.99,
+      "us": 29.99
+    },
+    "seconds": 4.65,
+    "rows_per_sec": 390306,
+    "finished_at": "2026-09-18T23:20:51"
+  },
+  "sim_traffic": {
+    "stage": "sim_traffic",
+    "shards": 120,
+    "n_sessions": 30000000,
+    "rows": 634358747,
+    "searches": 37709580,
+    "impressions": 634358747,
+    "bytes": 5229097027,
+    "seconds": 896.04,
+    "rows_per_sec": 707958,
+    "finished_at": "2026-09-18T23:37:39"
+  },
+  "scale": {
+    "stage": "scale",
+    "rows": 23185076,
+    "tiers": [
+      2500000,
+      5000000,
+      10000000,
+      25000000
+    ],
+    "bytes": 4217600497,
+    "seconds": 379.39,
+    "rows_per_sec": 61111,
+    "finished_at": "2026-09-18T23:30:48"
+  },
+  "sim_replay": {
+    "stage": "sim_replay",
+    "rows": 10000000,
+    "unique_query_ids": 130652,
+    "unique_texts": 1527551,
+    "ideal_hit_rate_raw_text": 0.8472,
+    "ideal_hit_rate_normalised": 0.8598,
+    "peak_rps": 142,
+    "seconds": 28.03,
+    "rows_per_sec": 356760,
+    "finished_at": "2026-09-18T23:42:29"
+  },
+  "demo": {
+    "stage": "demo",
+    "rows": 1230808,
+    "files": {
+      "queries.parquet": 3025,
+      "judgments.parquet": 57075,
+      "catalog.parquet": 150663,
+      "product_commerce.parquet": 150663,
+      "product_edges.parquet": 588641,
+      "related_queries.parquet": 20492,
+      "query_doc_stats.parquet": 56958,
+      "query_popularity.parquet": 3025,
+      "replay_sample.parquet": 200000,
+      "category_complements.parquet": 266
+    },
+    "bytes": 129401835,
+    "seconds": 5.73,
+    "rows_per_sec": 214800,
+    "finished_at": "2026-09-18T23:45:27"
+  },
+  "demo_portable": {
+    "stage": "demo_portable",
+    "rows": 289713,
+    "files": {
+      "queries.parquet": 1537,
+      "judgments.parquet": 29202,
+      "catalog.parquet": 43304,
+      "product_commerce.parquet": 43304,
+      "product_edges.parquet": 81136,
+      "related_queries.parquet": 10272,
+      "query_doc_stats.parquet": 29155,
+      "query_popularity.parquet": 1537,
+      "replay_sample.parquet": 50000,
+      "category_complements.parquet": 266
+    },
+    "bytes": 19923547,
+    "seconds": 3.22,
+    "rows_per_sec": 89972,
+    "finished_at": "2026-09-18T23:45:30"
+  }
+}
