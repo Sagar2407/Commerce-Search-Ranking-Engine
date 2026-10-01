@@ -29,9 +29,11 @@ esci:
 esci_s:
   # 4.4K-product sample with real category / price / rating metadata (Apache-2.0).
   sample_url: https://media.githubusercontent.com/media/shuttie/esci-s/master/sample.json.gz
-  # Full dump (1.66M products, 3.4 GB). Not used yet: `acquire` only records whether it is present at
-  # data/raw/esci_s/esci.json.zst. Planned: replace classifier categories and simulated price/rating.
+  # Full dump (1.48M product pages, 3.6 GB): real category path, price, stars, rating count and image for ~82% of
+  # ESCI products. Replaces classifier departments and simulated price / rating where present (sample-only if the
+  # download fails).
   full_url: https://esci-s.s3.amazonaws.com/esci.json.zst
+  download_full: true
 
 splits:
   dev_fraction: 0.10           # carved from ESCI train, by query, stratified by locale
@@ -48,8 +50,10 @@ catalog:
   sparse_chars: {us: 150, es: 150, jp: 60}   # description+bullet chars below which a product is "sparse"
 
 taxonomy:
-  min_confidence: 0.50         # below this, category = "Unknown" (CV: ~90% accurate at ~70% coverage)
-  cv_folds: 5
+  min_confidence: 0.50         # below this, category = "Unknown"
+  cv_folds: 3
+  max_seed_labels: 150000      # classifier training cap (it only fills products without an ESCI-S page)
+  propagate_below: 50000       # graph-propagated weak labels only when real labels are scarce
 
 slices:
   underspecified_max_tokens: 2         # us/es tokens

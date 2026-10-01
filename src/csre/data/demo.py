@@ -66,10 +66,15 @@ def _build(cfg: Config, D: dict, out, drop_columns: list[str], replay_rows: int,
             "replay_sample.parquet": f"SELECT * FROM '{S('replay', 'requests.parquet')}' WHERE locale = '{D['locale']}' LIMIT {replay_rows}",
             "category_complements.parquet": f"SELECT * FROM '{P('graph', 'category_complements.parquet')}'",
         }
+        if cfg.path("processed", "product_meta.parquet").exists():   # real ESCI-S display metadata (images)
+            jobs["product_meta.parquet"] = f"SELECT m.* FROM '{P('product_meta.parquet')}' m SEMI JOIN dd USING (doc_id)"
         counts = {}
         for name, sql in jobs.items():
             con.execute(f"COPY ({sql}) TO '{out / name}' (FORMAT PARQUET, COMPRESSION ZSTD)")
             counts[name] = con.sql(f"SELECT count(*) FROM '{out / name}'").fetchone()[0]
+        bp = cfg.path("processed", "brand_patterns.json")
+        if bp.exists():  # query brand dictionary, so online query parsing works on the subset alone
+            shutil.copy(bp, out / "brand_patterns.json")
         info.update(rows=sum(counts.values()), files=counts, bytes=dir_size_bytes(out))
         log.info("demo subset: %s", counts)
     return info

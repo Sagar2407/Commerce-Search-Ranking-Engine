@@ -16,6 +16,7 @@ Design notes
 """
 from __future__ import annotations
 
+import json
 import math
 import shutil
 from collections import Counter
@@ -175,6 +176,9 @@ def _query_table(cfg: Config, j: pl.DataFrame) -> pl.DataFrame:
 
     # brand detection (Aho-Corasick via polars extract_many)
     pats = _brand_patterns(cfg)
+    # persisted so that online query parsing (csre.search.query) matches offline parsing exactly
+    bp = cfg.path("processed", "brand_patterns.json")
+    bp.write_text(json.dumps(pats, ensure_ascii=False))
     parts = []
     for loc, g in q.group_by("locale"):
         loc = loc[0]
