@@ -37,6 +37,8 @@ def _queries(eng: Engine, split: str, n: int, seed: int) -> tuple[pl.DataFrame, 
 
 def rerank_depth(cfg: Config, eng: Engine, n: int = 600, depths=(0, 10, 20, 50, 100, 200)) -> list[dict]:
     q, judged = _queries(eng, cfg.get("eval.split"), n, cfg.seed)
+    for text, loc in zip(q["query"].head(30).to_list(), q["locale"].head(30).to_list()):   # warm-up
+        eng.search(text, loc, "ltr", k=100)
     out = []
     for d in depths:
         method = "hybrid" if d == 0 else "ltr"
@@ -45,10 +47,11 @@ def rerank_depth(cfg: Config, eng: Engine, n: int = 600, depths=(0, 10, 20, 50, 
             rows, gains, labels = judged[qid]
             jd = {int(r): (float(g), str(l)) for r, g, l in zip(rows, gains, labels)}
             t = time.perf_counter()
-            resp = eng.search(text, loc, method, k=10, rerank_depth=max(d, 10),
+            # same basis as `csre eval` retrieval: top 100 returned, condensed nDCG@10 over them
+            resp = eng.search(text, loc, method, k=100, rerank_depth=max(d, 10),
                               n_candidates=max(100, d // 2 + 1))
             lat.append((time.perf_counter() - t) * 1e3)
-            m = M.retrieval_metrics(resp.rows, jd, 10, 10)
+            m = M.retrieval_metrics(resp.rows, jd, 10, 100)
             nd.append(np.nan if m["ndcg10_cond"] is None else m["ndcg10_cond"])
         out.append({"depth": d, "method": method, "ndcg10_cond": float(np.nanmean(nd)), **M.latency_summary(np.array(lat))})
         log.info("rerank depth %d: nDCG %.4f p50 %.1f ms", d, out[-1]["ndcg10_cond"], out[-1]["p50"])
@@ -95,7 +98,20 @@ def _merge_cost(k: int, n_shards: int, reps: int = 2000) -> float:
     return (time.perf_counter() - t) * 1e3 / reps
 
 
-def catalog_scale(cfg: Config, eng: Engine, shard_docs: int = 2_500_000, n_queries: int = 300) -> dict:
+class _Light:
+    """Just what the scale benchmark needs (dataset, locales, encoder), without loading every index."""
+
+    def __init__(self, cfg: Config, corpus: str):
+        from ..search.corpus import Dataset  # noqa: PLC0415
+        from ..search.dense import load_encoder  # noqa: PLC0415
+        from ..search.registry import ModelRegistry  # noqa: PLC0415
+        self.ds = Dataset(cfg, corpus)
+        self.idx = {loc: None for loc in self.ds.locales()}
+        p = ModelRegistry(cfg).path("dense_encoder")
+        self.encoder = load_encoder(p) if p else None
+
+
+def catalog_scale(cfg: Config, eng, shard_docs: int = 2_500_000, n_queries: int = 300) -> dict:
     """Build one BM25 + dense shard of `shard_docs` products (real + distractors) and time it."""
     ds = eng.ds
     scale_dir = cfg.path("scale", "synthetic_catalog")
@@ -167,17 +183,26 @@ def catalog_scale(cfg: Config, eng: Engine, shard_docs: int = 2_500_000, n_queri
                     "shard scales BM25 latency down linearly (postings shrink with the catalog)."}
 
 
-def run_bench(cfg: Config, corpus: str | None = None) -> dict:
+def run_bench(cfg: Config, corpus: str | None = None, parts: tuple[str, ...] = ("rerank_depth", "ann", "scale")
+              ) -> dict:
     with stage_timer(cfg, "bench") as info:
-        eng = Engine(cfg, corpus or "full")
+        eng = Engine(cfg, corpus or "full") if set(parts) - {"scale"} else _Light(cfg, corpus or "full")
         _limit_threads()
-        res = {"corpus": eng.ds.name, "versions": eng.versions, "created_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
-               "serving_depth": int(cfg.get("search.ltr.rerank_depth", 100)),
-               "rerank_depth": rerank_depth(cfg, eng), "ann": ann_sweep(cfg, eng)}
         p = cfg.path("reports", "bench.json")
+        res = json.loads(p.read_text()) if p.exists() else {}      # partial re-runs keep the other sections
+        res.update({"corpus": eng.ds.name, "versions": getattr(eng, "versions", res.get("versions")), "created_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+                    "serving_depth": int(cfg.get("search.ltr.rerank_depth", 100))})
+        if "rerank_depth" in parts:
+            res["rerank_depth"] = rerank_depth(cfg, eng)
+        if "ann" in parts:
+            res["ann"] = ann_sweep(cfg, eng)
         p.write_text(json.dumps(res, indent=2, default=str))
-        res["scale"] = catalog_scale(cfg, eng, int(cfg.get("bench.shard_docs", 2_500_000)))
-        p.write_text(json.dumps(res, indent=2, default=str))
+        if "scale" in parts:
+            light = _Light(cfg, eng.ds.name)
+            del eng                       # free the full indexes before building a 2.5M-product shard
+            gc.collect()
+            res["scale"] = catalog_scale(cfg, light, int(cfg.get("bench.shard_docs", 2_500_000)))
+            p.write_text(json.dumps(res, indent=2, default=str))
         info.update(rows=1)
     log.info("wrote %s", p)
     return res

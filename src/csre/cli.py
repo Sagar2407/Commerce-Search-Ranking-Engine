@@ -48,7 +48,7 @@ def run_search_stage(stage: str, cfg, args) -> None:
         serve(cfg, args.corpus)
     elif stage == "bench":
         from .evaluation.bench import run_bench
-        run_bench(cfg, args.corpus)
+        run_bench(cfg, args.corpus, tuple(args.parts.split(",")) if args.parts else ("rerank_depth", "ann", "scale"))
     elif stage == "train-esci-class":
         from .search.train import train_esci_class
         train_esci_class(cfg, args.corpus or "full")
