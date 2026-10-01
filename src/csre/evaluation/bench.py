@@ -111,76 +111,93 @@ class _Light:
         self.encoder = load_encoder(p) if p else None
 
 
-def catalog_scale(cfg: Config, eng, shard_docs: int = 2_500_000, n_queries: int = 300) -> dict:
-    """Build one BM25 + dense shard of `shard_docs` products (real + distractors) and time it."""
+def _shard_docs(ds, eng, n: int, scale_dir) -> pl.DataFrame:
+    real = pl.concat([ds.catalog(l, ["doc_id", "title", "doc_text", "n_title_chars"]) for l in eng.idx])
+    if n <= real.height:
+        return real.sample(n=n, seed=0)
+    syn = pl.scan_parquet(str(scale_dir / "**" / "*.parquet")).select("doc_id", "title", "doc_text") \
+            .head(n - real.height).collect() \
+            .with_columns(pl.col("title").str.len_chars().cast(pl.UInt32).alias("n_title_chars"))
+    return pl.concat([real, syn], how="vertical_relaxed")
+
+
+def catalog_scale(cfg: Config, eng, sizes=(500_000, 1_000_000, 1_500_000), n_queries: int = 300) -> dict:
+    """Build BM25 + dense/HNSW shards of increasing size (real products + phase-1 distractors), time each one,
+    and project larger catalogs as parallel shards of the largest measured size."""
     ds = eng.ds
     scale_dir = cfg.path("scale", "synthetic_catalog")
     if not scale_dir.exists():
         return {"skipped": "no phase-1 scale tiers (run `csre scale`)"}
-    real = pl.concat([ds.catalog(l, ["doc_id", "locale", "title", "doc_text", "n_title_chars"]) for l in eng.idx])
-    need = max(0, shard_docs - real.height)
-    syn = pl.scan_parquet(str(scale_dir / "**" / "*.parquet")).select("doc_id", "locale", "title", "doc_text") \
-            .head(need).collect()
-    docs = pl.concat([real.select("doc_id", "locale", "title", "doc_text"), syn])
-    log.info("scale shard: %d real + %d synthetic = %d products", real.height, syn.height, docs.height)
     B = cfg.get("search.bm25")
-    t = time.time()
-    bm = BM25Index.build(docs["doc_text"].to_list(), B["k1"], B["b"], B["jp_ngram"], B["stem_plurals"])
-    bm_build = time.time() - t
+    an = cfg.get("search.dense.ann")
     q = ds.queries().filter(pl.col("split") == cfg.get("eval.split")).sample(n=n_queries, seed=cfg.seed)
+    texts_q = q["query"].to_list()
+    qv = [eng.encoder.encode_query(x) for x in texts_q] if eng.encoder is not None else []
     _limit_threads()
-    lat = []
-    for text in q["query"].to_list():
-        t = time.perf_counter()
-        bm.search(text, 100)
-        lat.append((time.perf_counter() - t) * 1e3)
-    shard = {"docs": docs.height, "real_docs": real.height, "synthetic_docs": syn.height,
-             "bm25": {"build_s": round(bm_build, 1), "bytes": bm.nbytes(), "terms": len(bm.vocab),
-                      "latency_ms": M.latency_summary(np.array(lat))}}
-    del bm
-    gc.collect()
-    if eng.encoder is not None:
+    measured = []
+    for n in sizes:
+        docs = _shard_docs(ds, eng, n, scale_dir)
         t = time.time()
-        texts = pl.concat([real.select("doc_text", "n_title_chars"),
-                           syn.select("doc_text", pl.col("title").str.len_chars().cast(pl.UInt32).alias("n_title_chars"))])
-        emb = eng.encoder.encode(encoder_text(texts))
-        enc_s = time.time() - t
-        an = cfg.get("search.dense.ann")
-        t = time.time()
-        vi = VectorIndex.build(emb, "hnsw", an["hnsw_m"], an["ef_construction"], an["ef_search"], 0)
-        ann_s = time.time() - t
-        qv = [eng.encoder.encode_query(x) for x in q["query"].to_list()]
+        bm = BM25Index.build(docs["doc_text"].to_list(), B["k1"], B["b"], B["jp_ngram"], B["stem_plurals"])
+        build = time.time() - t
         lat = []
-        for v in qv:
+        for x in texts_q:
             t = time.perf_counter()
-            vi.search(v, 100)
+            bm.search(x, 100)
             lat.append((time.perf_counter() - t) * 1e3)
-        shard["dense"] = {"encode_s": round(enc_s, 1), "encode_docs_per_s": int(docs.height / max(enc_s, 1e-9)),
-                          "hnsw_build_s": round(ann_s, 1), "bytes": vi.nbytes(), "latency_ms": M.latency_summary(np.array(lat))}
-        del vi, emb
+        rec = {"docs": docs.height, "bm25": {"build_s": round(build, 1), "bytes": bm.nbytes(), "terms": len(bm.vocab),
+                                             "latency_ms": M.latency_summary(np.array(lat))}}
+        del bm
         gc.collect()
-    tiers = []
+        if eng.encoder is not None:
+            t = time.time()
+            emb = eng.encoder.encode(encoder_text(docs))
+            enc_s = time.time() - t
+            t = time.time()
+            vi = VectorIndex.build(emb, "hnsw", an["hnsw_m"], an["ef_construction"], an["ef_search"], 0)
+            ann_s = time.time() - t
+            lat = []
+            for v in qv:
+                t = time.perf_counter()
+                vi.search(v, 100)
+                lat.append((time.perf_counter() - t) * 1e3)
+            rec["dense"] = {"encode_s": round(enc_s, 1), "encode_docs_per_s": int(docs.height / max(enc_s, 1e-9)),
+                            "hnsw_build_s": round(ann_s, 1), "bytes": vi.nbytes(),
+                            "latency_ms": M.latency_summary(np.array(lat))}
+            del vi, emb
+        del docs
+        gc.collect()
+        measured.append(rec)
+        log.info("scale shard %d docs: bm25 p50 %.1f ms, dense p50 %s ms", rec["docs"], rec["bm25"]["latency_ms"]["p50"],
+                 rec.get("dense", {}).get("latency_ms", {}).get("p50"))
+    # linear trend of BM25 latency in catalog size (postings grow with the catalog)
+    xs = np.array([m["docs"] for m in measured], float)
+    ys = np.array([m["bm25"]["latency_ms"]["p50"] for m in measured])
+    slope, intercept = np.polyfit(xs / 1e6, ys, 1) if len(xs) > 1 else (0.0, float(ys[0]))
+    big = measured[-1]
     C = cfg.get("cost")
-    rerank_ms = None
-    for t_docs in [real.height, *cfg.get("scale.tiers")]:
-        n_sh = max(1, math.ceil(t_docs / shard_docs))
+    tiers = []
+    for t_docs in sorted({int(x) for x in [1_814_924, *cfg.get("scale.tiers")]}):
+        n_sh = max(1, math.ceil(t_docs / big["docs"]))
         merge = _merge_cost(100, n_sh) if n_sh > 1 else 0.0
-        bm_p50 = shard["bm25"]["latency_ms"]["p50"] * min(1.0, t_docs / shard_docs) if n_sh == 1 else shard["bm25"]["latency_ms"]["p50"]
-        d_p50 = shard.get("dense", {}).get("latency_ms", {}).get("p50")
-        cpu_ms = shard["bm25"]["latency_ms"]["mean"] * n_sh + (shard.get("dense", {}).get("latency_ms", {}).get("mean", 0) * n_sh)
+        bm_p50 = (intercept + slope * t_docs / 1e6) if n_sh == 1 else big["bm25"]["latency_ms"]["p50"]
+        d = big.get("dense", {})
+        cpu_ms = (big["bm25"]["latency_ms"]["mean"] + d.get("latency_ms", {}).get("mean", 0.0)) * n_sh
         tiers.append({
-            "catalog_docs": int(t_docs), "shards": n_sh, "measured": t_docs <= shard_docs,
-            "bm25_p50_ms": round(bm_p50 + merge, 3), "dense_p50_ms": None if d_p50 is None else round(d_p50 + merge, 3),
+            "catalog_docs": t_docs, "shards": n_sh, "measured": any(abs(m["docs"] - t_docs) < 1 for m in measured),
+            "bm25_p50_ms": round(bm_p50 + merge, 3),
+            "dense_p50_ms": None if not d else round(d["latency_ms"]["p50"] + merge, 3),
             "merge_ms": round(merge, 4),
-            "memory_gb": round(n_sh * (shard["bm25"]["bytes"] + shard.get("dense", {}).get("bytes", 0)) / 1e9, 2),
+            "memory_gb": round(n_sh * (big["bm25"]["bytes"] + d.get("bytes", 0)) / 1e9, 2),
             "retrieval_cpu_ms_per_query": round(cpu_ms, 2),
             "usd_per_million_retrieval": round(M.cost_per_million(cpu_ms, int(C["vcpus"]), float(C["usd_per_hour"]),
                                                                   float(C["target_utilisation"]))["usd_per_million"], 4),
         })
-    return {"shard": shard, "tiers": tiers, "shard_docs": shard_docs,
-            "note": "Shard numbers are measured. Tier latency = slowest shard (shards searched in parallel) + measured "
-                    "top-k merge; CPU cost and memory scale with the number of shards. A 1-shard tier smaller than the "
-                    "shard scales BM25 latency down linearly (postings shrink with the catalog)."}
+    return {"measured": measured, "shard_docs": big["docs"], "tiers": tiers,
+            "bm25_p50_ms_per_million_docs": round(float(slope), 3),
+            "note": f"Shards of 0.5M-{big['docs'] / 1e6:.1f}M products are built and timed (single-threaded). Catalogs "
+                    f"larger than one shard are served as {big['docs'] / 1e6:.1f}M-product shards searched in parallel: "
+                    "latency = slowest shard + measured top-100 merge; CPU cost and memory scale with the shard count."}
 
 
 def run_bench(cfg: Config, corpus: str | None = None, parts: tuple[str, ...] = ("rerank_depth", "ann", "scale")
@@ -201,7 +218,7 @@ def run_bench(cfg: Config, corpus: str | None = None, parts: tuple[str, ...] = (
             light = _Light(cfg, eng.ds.name)
             del eng                       # free the full indexes before building a 2.5M-product shard
             gc.collect()
-            res["scale"] = catalog_scale(cfg, light, int(cfg.get("bench.shard_docs", 2_500_000)))
+            res["scale"] = catalog_scale(cfg, light)
             p.write_text(json.dumps(res, indent=2, default=str))
         info.update(rows=1)
     log.info("wrote %s", p)

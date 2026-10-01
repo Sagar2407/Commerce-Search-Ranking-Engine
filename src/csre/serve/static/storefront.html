@@ -611,7 +611,7 @@ function benchHtml(b) {
     html += `<div class="figure"><div class="eyebrow">Is the reranker worth it? Products reranked per query</div>
       ${lineChart([{ name: "condensed nDCG@10", color: mc("ltr"), pts: rd.map(r => ({ x: r.depth, y: r.ndcg10_cond })) }], { w: 560, h: 220, x: "products reranked (0 = hybrid only)", y: "nDCG@10", yfmt: v => v.toFixed(3) })}
       ${lineChart([{ name: "p50 latency", color: mc("bm25"), pts: rd.map(r => ({ x: r.depth, y: r.p50 })) }], { w: 560, h: 180, x: "products reranked", y: "p50 ms", yfmt: v => v.toFixed(1) + " ms" })}
-      <p>Quality gained per extra millisecond falls off as the reranker sees more candidates; the serving default (${esc(String(b.serving_depth || 100))}) sits where the curve flattens.</p></div>`;
+      <p>Reranking more of the fused candidates keeps paying off at under a millisecond per extra 100 products, so the serving default reranks ${esc(String(b.serving_depth || 200))} (the whole keyword + semantic union).</p></div>`;
   }
   if (b.ann?.length) {
     html += `<div class="figure"><div class="eyebrow">Approximate vs exact vector search</div><div class="tbl-wrap"><table><thead><tr><th>HNSW efSearch</th><th class="num">recall of exact top 100</th><th class="num">p50 ms</th><th class="num">p95 ms</th></tr></thead><tbody>

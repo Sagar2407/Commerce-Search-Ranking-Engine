@@ -56,7 +56,8 @@ search:
 
   ltr:
     candidates: 200            # union of BM25 + dense candidates scored by the reranker
-    rerank_depth: 100          # how many fused candidates the reranker sees (latency / quality knob)
+    rerank_depth: 200          # fused candidates the reranker sees: the whole BM25 + dense union (bench: 100 -> 200
+                               # adds +0.0075 condensed nDCG@10 for < 1 ms)
     fit_split: dev             # held out from the encoder / department model (stacking); "train" to compare
     fit_fraction: 0.8          # of dev queries used to fit; the rest early-stops
     max_train_queries: 60000

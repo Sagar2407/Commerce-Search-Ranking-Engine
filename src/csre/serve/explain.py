@@ -107,9 +107,9 @@ def explain_results(engine, resp, products: list[dict], top_n: int = 3) -> list[
         }
         if cp is not None and engine.qcat is not None and prod.get("category") in engine.qcat.class_index:
             e["department_fit"] = round(float(cp[engine.qcat.class_index[prod["category"]]]), 4)
-        if contrib is not None:
+        if contrib is not None and i < len(contrib):     # results past the rerank depth have no contributions
             e["ranker"] = shap_summary(contrib[i], names, resp.features[i], top_n)
-        if probs is not None:
+        if probs is not None and i < len(probs):
             p = probs[i]
             labs = ["I", "C", "S", "E"]
             k = int(np.argmax(p))

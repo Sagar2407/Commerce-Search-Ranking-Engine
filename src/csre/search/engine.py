@@ -426,8 +426,16 @@ class Engine:
         rr = cand[:depth]
         scores, X, names = self._ltr_scores(served, ctx, locale, rr, T)
         order = np.lexsort((rr, -scores))
-        resp = SearchResponse(query, locale, method, served, rr[order][:k], scores[order][:k], T, reason,
-                              dict(self.versions), len(cand), ctx, X[order][:k], names)
+        rows, sc, X = rr[order], scores[order], X[order]
+        if k > len(rows) and len(cand) > len(rows):
+            # beyond the rerank depth, results continue in fused order (below every reranked score)
+            tail = cand[len(rr):len(rr) + (k - len(rows))]
+            floor = (sc.min() if len(sc) else 0.0) - 1.0
+            rows = np.concatenate([rows, tail])
+            sc = np.concatenate([sc, floor - np.arange(1, len(tail) + 1, dtype=np.float32) * 1e-3])
+        n_feat = min(k, len(X))
+        resp = SearchResponse(query, locale, method, served, rows[:k], sc[:k], T, reason,
+                              dict(self.versions), len(cand), ctx, X[:n_feat], names)
         return resp
 
     def _ltr_scores(self, name: str, ctx: QueryContext, locale: str, rows: np.ndarray, T: dict | None = None):
