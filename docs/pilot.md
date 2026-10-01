@@ -76,6 +76,22 @@ under `pilot_searches_per_arm_for_purchase`.
 instrumentation and analysis are tested before real traffic. Its effects come from the same labels as the
 offline evaluation and are not evidence of a real lift.
 
+### Rehearsal result (`data/reports/experiment_ltr_vs_bm25_v1_simulated.md`)
+
+40,000 simulated shoppers, ~122K searches through the full-catalog service (58% served from the result cache):
+
+| | Control (BM25) | Treatment (reranker) | Difference (95% CI) |
+|---|---|---|---|
+| Search success | 7.87% | 8.33% | +5.7% relative (+1.7% to +9.5%) |
+| Click-through | 37.4% | 39.5% | +5.5% |
+| Purchases per search | 4.74% | 5.02% | +5.9% |
+| Zero-result searches | 0.62% | 0.00% | |
+| p95 latency | 12.3 ms | 20.0 ms | budget 150 ms: ok |
+
+Sample-ratio check p = 0.22. The effect matches the offline simulation (+5–8%), and ~60K searches per arm was
+just enough to detect it, which supports the sample sizes above. Real shoppers will differ; this validates the
+pipeline and the sizing, not the lift.
+
 ## Instrumentation already in place
 
 * `POST /api/feedback` logs impressions, clicks, carts, purchases and thumbs with position, method and model

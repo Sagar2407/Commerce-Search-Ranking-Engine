@@ -1,0 +1,95 @@
+{
+  "experiment": "ltr_vs_bm25_v1_simulated",
+  "created_at": "2026-10-01T17:23:54",
+  "events": 197488,
+  "users_by_arm": {
+    "control": 19877,
+    "treatment": 20123
+  },
+  "allocation": {
+    "control": 0.5,
+    "treatment": 0.5
+  },
+  "srm_pvalue": 0.21869710485138033,
+  "srm_ok": true,
+  "control": "control",
+  "arms": {
+    "control": {
+      "users": 19877,
+      "searches": 60642,
+      "search_success": 0.07874080670162593,
+      "ctr": 0.3740147092773985,
+      "purchases_per_search": 0.04739289601266449,
+      "zero_result_rate": 0.006167342765739916,
+      "fallback_rate": 0.0,
+      "latency_p50_ms": 2.7554999999999996,
+      "latency_p95_ms": 12.282899999999994
+    },
+    "treatment": {
+      "users": 20123,
+      "searches": 61268,
+      "search_success": 0.08332245217731932,
+      "ctr": 0.3945942416922374,
+      "purchases_per_search": 0.05018933211464386,
+      "zero_result_rate": 0.0,
+      "fallback_rate": 0.0017627472742704185,
+      "latency_p50_ms": 7.723,
+      "latency_p95_ms": 19.996
+    }
+  },
+  "comparisons": {
+    "treatment": {
+      "cuped": true,
+      "search_success": {
+        "delta": 0.004478827160381546,
+        "lo": 0.0013441560768265597,
+        "hi": 0.007537079542883675,
+        "relative": 0.05688063594970842,
+        "significant": true
+      },
+      "ctr": {
+        "delta": 0.020579532414838897,
+        "lo": 0.01524286455816571,
+        "hi": 0.026072516523577723,
+        "relative": 0.05502332369386978,
+        "significant": true
+      },
+      "purchases_per_search": {
+        "delta": 0.0027964361019793688,
+        "lo": 0.0002642688409910006,
+        "hi": 0.005358059008651285,
+        "relative": 0.05900538555888409,
+        "significant": true
+      },
+      "guardrails": {
+        "latency_p95_ms": {
+          "control": 12.282899999999994,
+          "treatment": 19.996,
+          "budget_ms": 150,
+          "ok": true
+        },
+        "fallback_rate": {
+          "control": 0.0,
+          "treatment": 0.0017627472742704185
+        }
+      }
+    }
+  },
+  "methods": {
+    "control": "bm25",
+    "treatment": "ltr"
+  },
+  "simulated": {
+    "users": 40000,
+    "searches": 121910,
+    "cache": {
+      "entries": 37014,
+      "hits": 69912,
+      "misses": 51998,
+      "hit_rate": 0.5735,
+      "evictions": 0
+    },
+    "unjudged_label": "C",
+    "seconds": 2801.1
+  }
+}

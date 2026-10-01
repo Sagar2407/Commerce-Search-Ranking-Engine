@@ -64,6 +64,10 @@ Full tables: [`data/reports/eval_full_test.md`](data/reports/eval_full_test.md).
   (95% CIs all above +3.7%). A real pilot would need roughly 45K–80K searches per arm to detect that
   ([docs/pilot.md](docs/pilot.md)). These are simulated numbers built from the same labels: they size the pilot,
   they do not replace it.
+* **The pilot is ready to run.** A/B assignment by shopper, exposure and outcome logging, and a user-level
+  analysis (sample-ratio check, CUPED, bootstrap CIs, latency guardrails) are built in. A rehearsal with 40,000
+  simulated shoppers through the real service detected the reranker's simulated +5.7% search-success lift
+  (CI +1.7% to +9.5%) at ~60K searches per arm, as sized ([docs/pilot.md](docs/pilot.md)).
 * **Feedback helps only queries seen before.** The feedback-aware ranker loses its advantage on query variants it
   has no history for, and its offline gain is simulator-dependent; it is reported separately, never as a
   conversion claim.
