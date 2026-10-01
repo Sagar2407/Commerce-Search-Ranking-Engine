@@ -274,6 +274,7 @@ const api = {
     return r.json();
   },
   evalReport() { return SNAP ? Promise.resolve(SNAP.eval) : this.get("/api/eval"); },
+  report(name) { return SNAP ? Promise.resolve(SNAP.reports?.[name] || null) : this.get(`/api/report/${name}`).catch(() => null); },
   models() { return SNAP ? Promise.resolve(SNAP.models) : this.get("/api/models"); },
 };
 
@@ -540,6 +541,8 @@ async function renderEval() {
       ${Object.entries(tab).map(([v, ms]) => `<tr><td>${esc(v.replace("_", " "))}</td>${M.map(m => { const x = ms[m]; if (!x) return "<td class='num'>–</td>"; const dd = x.variant - x.original; return `<td class="num" style="color:${dd < -0.02 ? "var(--bad)" : "inherit"}">${dd >= 0 ? "+" : ""}${fmt(dd)}</td>`; }).join("")}</tr>`).join("")}
       </tbody></table></div><p>Change in condensed nDCG@10 when the shopper types a variant (typo, dropped or reordered word, extra modifier, case or spacing) instead of the original query, scored against the original query's labels.</p></div>`;
   }
+  const [bench, sim] = await Promise.all([api.report("bench"), api.report("simulated_ab")]);
+  const extraHtml = benchHtml(bench) + simHtml(sim);
   $("#evalBody").className = "";
   $("#evalBody").innerHTML = `<div class="eyebrow">Offline evaluation · ${esc(r.created_at || "")}</div><h2 style="margin-bottom:14px">Where each approach wins, and what it costs</h2>
     ${callouts}
@@ -550,10 +553,69 @@ async function renderEval() {
     <div class="figure" style="margin-bottom:16px"><div class="eyebrow">All approaches, same test queries</div>${table}</div>
     <div class="figure" style="margin-bottom:16px"><div class="eyebrow">Rerank nDCG@10 by query slice</div>${heat}</div>
     ${robust}
+    ${extraHtml}
     <div class="figure" style="margin-top:16px"><div class="eyebrow">Reading these numbers</div><ul class="prose">
       <li>These are offline relevance results on human judgments. They do not show conversion impact; a live pilot would measure search success and engagement.</li>
       <li>Latency and cost come from one CPU thread on this build's hardware with an assumed instance price (${esc(r.latency?.cost_assumptions?.instance || "")}, $${r.latency?.cost_assumptions?.usd_per_hour ?? ""}/h).</li>
       <li>Product prices and ratings come from real product pages (ESCI-S) where available and are simulated otherwise; clicks and purchases are always simulated.</li></ul></div>`;
+}
+
+function lineChart(series, o) {
+  // series: [{name, color, pts:[{x,y}]}]; linear x, linear y, both from one scale each
+  const W = o.w, H = o.h, L = 56, R = 16, T = 14, B = 40;
+  const xs = series.flatMap(s => s.pts.map(p => p.x)), ys = series.flatMap(s => s.pts.map(p => p.y));
+  if (!xs.length) return "";
+  const x0 = Math.min(...xs), x1 = Math.max(...xs);
+  let y0 = Math.min(...ys), y1 = Math.max(...ys); const pad = Math.max(1e-3, (y1 - y0) * 0.15); y0 -= pad; y1 += pad;
+  const X = v => L + (v - x0) / ((x1 - x0) || 1) * (W - L - R), Y = v => T + (1 - (v - y0) / (y1 - y0)) * (H - T - B);
+  const xt = niceTicks(x0, x1, 5), yt = niceTicks(y0, y1, 4);
+  return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.y)} by ${esc(o.x)}">
+    <g class="grid">${yt.map(v => `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}"/>`).join("")}</g>
+    ${yt.map(v => `<text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end">${o.yfmt ? o.yfmt(v) : v}</text>`).join("")}
+    ${xt.filter(v => v >= x0 && v <= x1).map(v => `<text x="${X(v)}" y="${H - B + 16}" text-anchor="middle">${v}</text>`).join("")}
+    <text x="${(L + W - R) / 2}" y="${H - 4}" text-anchor="middle">${esc(o.x)}</text>
+    ${series.map(s => `<polyline fill="none" stroke-width="2" style="stroke:${s.color}" points="${s.pts.map(p => `${X(p.x)},${Y(p.y)}`).join(" ")}"/>
+      ${s.pts.map(p => `<circle cx="${X(p.x)}" cy="${Y(p.y)}" r="4" style="fill:${s.color}"><title>${esc(s.name)}: ${p.x} → ${o.yfmt ? o.yfmt(p.y) : p.y}</title></circle>`).join("")}`).join("")}
+  </svg></div>`;
+}
+
+function benchHtml(b) {
+  if (!b) return "";
+  let html = `<div class="grid2" style="margin-top:16px">`;
+  if (b.rerank_depth?.length) {
+    const rd = b.rerank_depth;
+    html += `<div class="figure"><div class="eyebrow">Is the reranker worth it? Products reranked per query</div>
+      ${lineChart([{ name: "condensed nDCG@10", color: mc("ltr"), pts: rd.map(r => ({ x: r.depth, y: r.ndcg10_cond })) }], { w: 560, h: 220, x: "products reranked (0 = hybrid only)", y: "nDCG@10", yfmt: v => v.toFixed(3) })}
+      ${lineChart([{ name: "p50 latency", color: mc("bm25"), pts: rd.map(r => ({ x: r.depth, y: r.p50 })) }], { w: 560, h: 180, x: "products reranked", y: "p50 ms", yfmt: v => v.toFixed(1) + " ms" })}
+      <p>Quality gained per extra millisecond falls off as the reranker sees more candidates; the serving default (${esc(String(b.serving_depth || 100))}) sits where the curve flattens.</p></div>`;
+  }
+  if (b.ann?.length) {
+    html += `<div class="figure"><div class="eyebrow">Approximate vs exact vector search</div><div class="tbl-wrap"><table><thead><tr><th>HNSW efSearch</th><th class="num">recall of exact top 100</th><th class="num">p50 ms</th><th class="num">p95 ms</th></tr></thead><tbody>
+      ${b.ann.map(a => `<tr><td>${esc(String(a.ef_search))}</td><td class="num">${fmt(a.recall_at_100, 3)}</td><td class="num">${fmt(a.p50, 2)}</td><td class="num">${fmt(a.p95, 2)}</td></tr>`).join("")}</tbody></table></div>
+      <p>Measured on the largest market's index, single-threaded.</p></div>`;
+  }
+  html += `</div>`;
+  const sc = b.scale;
+  if (sc?.tiers) {
+    html += `<div class="figure" style="margin-top:16px"><div class="eyebrow">Growing the catalog: shards of ${(sc.shard_docs / 1e6).toFixed(1)}M products</div><div class="tbl-wrap"><table><thead><tr><th>Catalog</th><th class="num">shards</th><th>basis</th><th class="num">keyword p50 ms</th><th class="num">semantic p50 ms</th><th class="num">index memory GB</th><th class="num">retrieval $ / 1M</th></tr></thead><tbody>
+      ${sc.tiers.map(t => `<tr><td class="num" style="text-align:left">${(t.catalog_docs / 1e6).toFixed(1)}M</td><td class="num">${t.shards}</td><td>${t.measured ? "measured" : "projected"}</td><td class="num">${fmt(t.bm25_p50_ms, 2)}</td><td class="num">${fmt(t.dense_p50_ms, 2)}</td><td class="num">${fmt(t.memory_gb, 1)}</td><td class="num">$${fmt(t.usd_per_million_retrieval, 3)}</td></tr>`).join("")}</tbody></table></div>
+      <p>${esc(sc.note || "")}</p></div>`;
+  }
+  return html;
+}
+
+function simHtml(s) {
+  if (!s) return "";
+  const assumptions = Object.keys(s.results);
+  const ms = s.methods;
+  const pct = x => x == null ? "–" : (x * 100).toFixed(2) + "%";
+  const lift = x => x == null ? "–" : `${x >= 0 ? "+" : ""}${(x * 100).toFixed(1)}%`;
+  return `<div class="figure" style="margin-top:16px"><div class="eyebrow">Offline relevance vs simulated shopper behaviour</div>
+    <p>${s.queries.toLocaleString("en-US")} traffic-weighted test queries × ${s.sessions_per_query} simulated sessions each, through the phase-1 click model. Behaviour is generated from the same labels, so this restates offline relevance in shopper terms and sizes a pilot. It is not evidence of conversion impact. Unjudged products get an explicit assumed label.</p>
+    ${assumptions.map(a => `<div class="tbl-wrap"><table><thead><tr><th>${esc(a)}</th><th class="num">click-through</th><th class="num">add to cart</th><th class="num">purchase / search</th><th class="num">purchase lift vs BM25</th><th class="num">pilot searches per arm</th></tr></thead><tbody>
+      ${ms.map(m => { const r = s.results[a][m]; return `<tr style="--mc:${mc(m)}"><td><span class="swatch"></span>${esc(labelOf(m))}</td><td class="num">${pct(r.ctr)}</td><td class="num">${pct(r.cart)}</td><td class="num">${pct(r.buy)}</td><td class="num">${m === "bm25" ? "–" : lift(r.buy_rel_lift)}</td><td class="num">${r.pilot_searches_per_arm_for_purchase == null || !isFinite(r.pilot_searches_per_arm_for_purchase) ? "–" : Math.round(r.pilot_searches_per_arm_for_purchase).toLocaleString("en-US")}</td></tr>`; }).join("")}
+      </tbody></table></div>`).join("")}
+    <p>Pilot size: searches per arm for a two-sided test (alpha 0.05, 80% power) to detect the simulated purchase lift.</p></div>`;
 }
 
 // ------------------------------------------------------------------ system view

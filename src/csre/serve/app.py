@@ -97,6 +97,15 @@ def create_app(cfg: Config, corpus: str | None = None, engine: Engine | None = N
                 return JSONResponse(json.loads(p.read_text()))
         raise HTTPException(404, "no evaluation report yet: run `csre eval`")
 
+    @app.get("/api/report/{name}")
+    def report(name: str):
+        if name not in ("bench", "simulated_ab"):
+            raise HTTPException(404, "unknown report")
+        p = cfg.path("reports", f"{name}.json")
+        if not p.exists():
+            raise HTTPException(404, f"no {name} report yet")
+        return JSONResponse(json.loads(p.read_text()))
+
     @app.get("/api/models")
     def models():
         return eng.registry.listing()

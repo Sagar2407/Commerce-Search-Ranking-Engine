@@ -86,8 +86,13 @@ def build_snapshot(cfg: Config, corpus: str | None = None, per_slice: int = 3, o
               "method_labels": METHOD_LABELS,
               "default_method": svc.default_method, "versions": eng.versions, "latency_budget_ms": svc.budget_ms,
               "stats": {"cache": None, "feedback_events": 0}}
+    extra = {}
+    for name in ("bench", "simulated_ab"):
+        p = cfg.path("reports", f"{name}.json")
+        if p.exists():
+            extra[name] = json.loads(p.read_text())
     snap = {"health": health, "examples": examples, "queries": queries, "products": products, "eval": rep,
-            "models": eng.registry.listing(), "default_query": default_query}
+            "models": eng.registry.listing(), "default_query": default_query, "reports": extra}
     js = json.dumps(snap, ensure_ascii=False, separators=(",", ":"), default=str).replace("</", "<\\/")
     out = out or cfg.path("reports", "storefront_snapshot.html")
     out.write_text(page_html(js, wrap=False), encoding="utf-8")

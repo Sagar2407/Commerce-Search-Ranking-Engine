@@ -134,7 +134,7 @@ class QueryCategoryModel:
     """
 
     def __init__(self, vocab: dict[str, int], coef: np.ndarray, intercept: np.ndarray, classes: list[str]):
-        self.vocab, self.coef, self.intercept, self.classes = vocab, coef, intercept, classes
+        self.vocab, self.coef, self.intercept, self.classes = vocab, coef, intercept, [str(c) for c in classes]
         self.class_index = {c: i for i, c in enumerate(classes)}
 
     @staticmethod
@@ -163,7 +163,7 @@ class QueryCategoryModel:
         X = cls._matrix(rows, vocab)
         clf = SGDClassifier(loss="log_loss", alpha=2e-6, max_iter=20, tol=1e-4, random_state=seed)
         clf.fit(X, np.asarray(labels), sample_weight=weights)
-        return cls(vocab, clf.coef_.astype(np.float32), clf.intercept_.astype(np.float32), list(clf.classes_))
+        return cls(vocab, clf.coef_.astype(np.float32), clf.intercept_.astype(np.float32), [str(c) for c in clf.classes_])
 
     @staticmethod
     def _matrix(rows: list[list[str]], vocab: dict[str, int]):

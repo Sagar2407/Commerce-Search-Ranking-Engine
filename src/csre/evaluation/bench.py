@@ -172,6 +172,7 @@ def run_bench(cfg: Config, corpus: str | None = None) -> dict:
         eng = Engine(cfg, corpus or "full")
         _limit_threads()
         res = {"corpus": eng.ds.name, "versions": eng.versions, "created_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+               "serving_depth": int(cfg.get("search.ltr.rerank_depth", 100)),
                "rerank_depth": rerank_depth(cfg, eng), "ann": ann_sweep(cfg, eng)}
         p = cfg.path("reports", "bench.json")
         p.write_text(json.dumps(res, indent=2, default=str))

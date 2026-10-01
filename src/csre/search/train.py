@@ -92,9 +92,12 @@ def _dense_dev_fn(cfg: Config, ds: Dataset, n: int = 3000):
                      .select("doc_id", "t"))
     dt = pl.concat(parts).sort("doc_id").with_row_index("di")
     j = j.join(dt.select("doc_id", "di"), on="doc_id")
-    groups = [(g["di"].to_numpy(), g["gain"].to_numpy().astype(np.float64)) for _, g in j.group_by("query_id")]
     qtext = dict(zip(q["query_id"].to_list(), q["query"].to_list()))
-    gq = [qtext[k[0]] for k, _ in j.group_by("query_id")]
+    # one pass over the groups: Polars does not guarantee group order across separate group_by calls
+    gq, groups = [], []
+    for (qid,), g in j.group_by(["query_id"]):
+        gq.append(qtext[qid])
+        groups.append((g["di"].to_numpy(), g["gain"].to_numpy().astype(np.float64)))
     cache: dict = {}
 
     def fn(enc) -> dict:
