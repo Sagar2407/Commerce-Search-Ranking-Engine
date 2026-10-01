@@ -620,6 +620,11 @@ function benchHtml(b) {
   }
   html += `</div>`;
   const sc = b.scale;
+  if (sc?.measured?.length) {
+    html += `<div class="figure" style="margin-top:16px"><div class="eyebrow">Measured shards: latency stays flat for vector search, grows with the catalog for keyword search</div><div class="tbl-wrap"><table><thead><tr><th>Products in shard</th><th class="num">keyword p50 ms</th><th class="num">keyword build s</th><th class="num">keyword GB</th><th class="num">semantic p50 ms</th><th class="num">HNSW build s</th><th class="num">semantic GB</th></tr></thead><tbody>
+      ${sc.measured.map(m => `<tr><td class="num" style="text-align:left">${(m.docs / 1e6).toFixed(1)}M</td><td class="num">${fmt(m.bm25.latency_ms.p50, 2)}</td><td class="num">${fmt(m.bm25.build_s, 0)}</td><td class="num">${fmt(m.bm25.bytes / 1e9, 2)}</td><td class="num">${fmt(m.dense?.latency_ms?.p50, 2)}</td><td class="num">${fmt(m.dense?.hnsw_build_s, 0)}</td><td class="num">${fmt((m.dense?.bytes ?? 0) / 1e9, 2)}</td></tr>`).join("")}</tbody></table></div>
+      <p>Keyword latency grows about ${fmt(sc.bm25_p50_ms_per_million_docs, 1)} ms per million products (longer posting lists); HNSW search is nearly constant. At large catalogs the keyword retriever, not the semantic one, dominates compute.</p></div>`;
+  }
   if (sc?.tiers) {
     html += `<div class="figure" style="margin-top:16px"><div class="eyebrow">Growing the catalog: shards of ${(sc.shard_docs / 1e6).toFixed(1)}M products</div><div class="tbl-wrap"><table><thead><tr><th>Catalog</th><th class="num">shards</th><th>basis</th><th class="num">keyword p50 ms</th><th class="num">semantic p50 ms</th><th class="num">index memory GB</th><th class="num">retrieval $ / 1M</th></tr></thead><tbody>
       ${sc.tiers.map(t => `<tr><td class="num" style="text-align:left">${(t.catalog_docs / 1e6).toFixed(1)}M</td><td class="num">${t.shards}</td><td>${t.measured ? "measured" : "projected"}</td><td class="num">${fmt(t.bm25_p50_ms, 2)}</td><td class="num">${fmt(t.dense_p50_ms, 2)}</td><td class="num">${fmt(t.memory_gb, 1)}</td><td class="num">$${fmt(t.usd_per_million_retrieval, 3)}</td></tr>`).join("")}</tbody></table></div>

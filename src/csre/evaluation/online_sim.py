@@ -59,7 +59,7 @@ def z_power_n(p0: float, rel_lift: float, alpha: float = 0.05, power: float = 0.
     return num / (p1 - p0) ** 2
 
 
-def simulate_ab(cfg: Config, corpus: str | None = None, n_queries: int = 3000, sessions_per_query: int = 30,
+def simulate_ab(cfg: Config, corpus: str | None = None, n_queries: int = 3000, sessions_per_query: int = 100,
                 n_jobs: int | None = None) -> dict:
     global _ENG, _METHODS
     n_jobs = n_jobs or mp.cpu_count()
@@ -86,8 +86,10 @@ def simulate_ab(cfg: Config, corpus: str | None = None, n_queries: int = 3000, s
         results: dict = {}
         for name, unj in UNJUDGED_ASSUMPTIONS.items():
             per_q = {m: [] for m in _METHODS}
-            sim_rng = np.random.default_rng(cfg.seed + 7)
-            for qid, m, rows in ranked:
+            for qid, m, rows in sorted(ranked, key=lambda r: (r[0], r[1])):
+                # common random numbers: every method faces the same simulated shoppers for a query (same draws
+                # per session and position), so differences come from the rankings alone (paired comparison)
+                sim_rng = np.random.default_rng([cfg.seed, 7, int(qid)])
                 D = eng.idx[q_loc[qid]].docs
                 jr, _, jl = judged[qid]
                 lab = dict(zip(jr.tolist(), jl.tolist()))

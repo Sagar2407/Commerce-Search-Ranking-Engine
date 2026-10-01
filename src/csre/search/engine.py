@@ -214,7 +214,8 @@ class Engine:
             for loc, ix in self.idx.items():
                 self.spellers[loc] = SpellCorrector.from_bm25(
                     ix.bm25_text, int(SP.get("min_df", 5)), int(SP.get("max_df", 3)), float(SP.get("min_ratio", 20)),
-                    protected={w for b in bp.get(loc, []) for w in b.split()})
+                    protected={w for b in bp.get(loc, []) for w in b.split()}, rare_df=int(SP.get("rare_df", 0)),
+                    strong_ratio=float(SP.get("strong_ratio", 200)))
         hyb = self.registry.meta("hybrid")
         self.alpha = float(hyb["params"]["alpha"]) if hyb else float(cfg.get("search.hybrid.alpha", 0.5))
         if hyb:

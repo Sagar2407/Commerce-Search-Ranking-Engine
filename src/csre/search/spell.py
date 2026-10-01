@@ -48,14 +48,26 @@ def damerau1(a: str, b: str) -> bool:
 
 class SpellCorrector:
     def __init__(self, df: dict[str, int], index: dict[str, list[str]], max_df: int = 3, min_ratio: float = 20.0,
-                 protected: set[str] | None = None):
+                 protected: set[str] | None = None, rare_df: int = 0, strong_ratio: float = 200.0):
         self.df, self.index = df, index
         self.max_df, self.min_ratio = max_df, min_ratio
         self.protected = protected or set()
+        # sellers misspell too: a word in up to `rare_df` products is still corrected when a one-edit neighbour is
+        # `strong_ratio` times more frequent ("wireles" in 4 titles vs "wireless" in 3,295). 0 disables the rule.
+        self.rare_df, self.strong_ratio = rare_df, strong_ratio
+
+    def _needs(self, n0: int) -> float | None:
+        """Minimum frequency a replacement needs for a word seen in n0 products (None: leave the word alone)."""
+        if n0 < self.max_df:
+            return self.min_ratio * max(n0, 1)
+        if n0 <= self.rare_df:
+            return self.strong_ratio * n0
+        return None
 
     @classmethod
     def from_bm25(cls, bm25, min_df: int = 5, max_df: int = 3, min_ratio: float = 20.0,
-                  protected: set[str] | None = None) -> "SpellCorrector":
+                  protected: set[str] | None = None, rare_df: int = 0, strong_ratio: float = 200.0
+                  ) -> "SpellCorrector":
         dfs = np.diff(bm25.W.indptr)
         df = {t: int(dfs[j]) for t, j in bm25.vocab.items()}
         index: dict[str, list[str]] = {}
@@ -63,13 +75,14 @@ class SpellCorrector:
             if n >= min_df and len(t) >= 3 and t.isalpha() and all(ord(c) < 0x3000 for c in t):   # latin words only
                 for d in _deletes(t) | {t}:
                     index.setdefault(d, []).append(t)
-        return cls(df, index, max_df, min_ratio, protected)
+        return cls(df, index, max_df, min_ratio, protected, rare_df, strong_ratio)
 
     def suggest(self, term: str) -> str | None:
         if len(term) < 4 or not term.isalpha() or term in self.protected:
             return None
         n0 = self.df.get(term, 0)
-        if n0 >= self.max_df:
+        need = self._needs(n0)
+        if need is None:
             return None
         cands: set[str] = set()
         for d in _deletes(term) | {term}:
@@ -79,7 +92,7 @@ class SpellCorrector:
             if c == term:
                 continue
             n = self.df.get(c, 0)
-            if n > best_n and n >= self.min_ratio * max(n0, 1) and damerau1(term, c):
+            if n > best_n and n >= need and damerau1(term, c):
                 best, best_n = c, n
         return best
 
@@ -95,7 +108,7 @@ class SpellCorrector:
         for w in words:
             stemmed = A.stem(w)
             s = None
-            if stemmed not in A.STOPWORDS and self.df.get(stemmed, 0) < self.max_df:
+            if stemmed not in A.STOPWORDS and self._needs(self.df.get(stemmed, 0)) is not None:
                 # plural folding can garble a misspelling ("wireles" -> "wirele"), so try the raw word too
                 cands = [c for c in {self.suggest(stemmed), self.suggest(w)} if c and c != stemmed]
                 s = max(cands, key=lambda c: self.df.get(c, 0)) if cands else None
@@ -109,10 +122,12 @@ class SpellCorrector:
     def save(self, p: Path) -> None:
         with open(p, "wb") as f:
             pickle.dump({"df": self.df, "index": self.index, "max_df": self.max_df, "min_ratio": self.min_ratio,
-                         "protected": self.protected}, f, protocol=pickle.HIGHEST_PROTOCOL)
+                         "protected": self.protected, "rare_df": self.rare_df, "strong_ratio": self.strong_ratio},
+                        f, protocol=pickle.HIGHEST_PROTOCOL)
 
     @classmethod
     def load(cls, p: Path) -> "SpellCorrector":
         with open(p, "rb") as f:
             o = pickle.load(f)
-        return cls(o["df"], o["index"], o["max_df"], o["min_ratio"], o["protected"])
+        return cls(o["df"], o["index"], o["max_df"], o["min_ratio"], o["protected"], o.get("rare_df", 0),
+                   o.get("strong_ratio", 200.0))

@@ -37,6 +37,20 @@ Results: `data/reports/simulated_ab.json` (rendered in the storefront's Evaluati
 | Duration | At least two full weeks (weekly seasonality), and long enough to reach the sample size below |
 | Analysis | Two-proportion tests per metric, CUPED with pre-period behaviour, sequential monitoring with alpha spending |
 
+## What the simulation predicts (current models)
+
+Replaying 3,000 traffic-weighted test queries through the click model with 100 simulated shoppers each (the same
+shoppers for every approach), the content-only reranker lifts purchases per search over BM25 by:
+
+| Assumption for unjudged products | Lift | 95% CI | Searches per arm for the pilot |
+|---|---|---|---|
+| Irrelevant (pessimistic) | +9.3% | +6.9% to +11.7% | ~36,000 |
+| Complement (neutral) | +6.9% | +5.1% to +8.8% | ~53,000 |
+| Substitute (optimistic) | +5.8% | +4.3% to +7.4% | ~66,000 |
+
+Dense retrieval alone *loses* 19–39% in the same simulation (it surfaces more unjudged, often off-target products),
+which is why it is only used inside the hybrid and the reranker.
+
 ## Sample size
 
 For a two-sided test at alpha = 0.05 with 80% power, the searches needed per arm depend on the baseline

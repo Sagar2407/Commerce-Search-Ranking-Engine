@@ -11,16 +11,17 @@ down by query slice, with latency and serving cost next to quality.
 ## Results
 
 Test split: 30,969 held-out queries (rerank), 9,000 sampled for full-catalog retrieval; 1.8M products in three
-markets. `*` = 95% paired-bootstrap interval excludes zero. Latency: one CPU thread, warm process, top 10.
+markets. `*` = 95% paired-bootstrap interval excludes zero. Latency: one CPU thread, warm process, cold query (no
+result or parse cache), top 10.
 
 | Approach | Rerank nDCG@10 | Δ vs BM25 | Retrieval nDCG@10 (condensed) | Δ vs BM25 | Recall@100 (Exact) | p50 / p95 ms | $ per 1M queries |
 |---|---|---|---|---|---|---|---|
-| Keyword (BM25) | 0.8422 | – | 0.6559 | – | 0.590 | 5.8 / 16.8 | $0.135 |
-| Semantic (dense) | 0.8354 | -0.0068 * | 0.5695 | -0.0865 * | 0.465 | 1.1 / 1.6 | $0.024 |
-| Hybrid (RRF) | 0.8460 | +0.0039 * | 0.6810 | +0.0251 * | 0.612 | 6.3 / 18.0 | $0.150 |
-| Hybrid (score fusion) | 0.8499 | +0.0078 * | 0.6843 | +0.0284 * | 0.618 | 8.2 / 23.9 | $0.197 |
-| **Reranker (LambdaMART)** | **0.8631** | **+0.0209 \*** | **0.6951** | **+0.0391 \*** | 0.618 | 11.8 / 29.2 | $0.276 |
-| Reranker + feedback ¹ | 0.9912 | +0.1490 * | 0.7635 | +0.1076 * | 0.618 | 14.3 / 32.8 | $0.330 |
+| Keyword (BM25) | 0.8422 | – | 0.6559 | – | 0.590 | 6.0 / 16.6 | $0.136 |
+| Semantic (dense) | 0.8354 | -0.0068 * | 0.5695 | -0.0865 * | 0.465 | 1.1 / 1.6 | $0.023 |
+| Hybrid (RRF) | 0.8460 | +0.0039 * | 0.6810 | +0.0251 * | 0.612 | 6.4 / 17.2 | $0.147 |
+| Hybrid (score fusion) | 0.8499 | +0.0078 * | 0.6843 | +0.0284 * | 0.618 | 8.3 / 21.7 | $0.191 |
+| **Reranker (LambdaMART)** | 0.8631 | +0.0209 * | 0.7013 | +0.0454 * | 0.623 | 11.3 / 25.6 | $0.258 |
+| Reranker + feedback ¹ | 0.9912 | +0.1490 * | 0.8046 | +0.1487 * | 0.669 | 14.8 / 30.2 | $0.339 |
 
 ¹ Uses clicks simulated from the same relevance labels: an upper bound on what feedback could add, not an estimate.
 
@@ -45,17 +46,22 @@ Full tables: [`data/reports/eval_full_test.md`](data/reports/eval_full_test.md).
 * **Semantic retrieval alone is worse than keyword search, but it finds different products.** Fused with BM25 it
   lifts recall of exact matches from 0.590 to 0.618 and retrieval nDCG by +0.028. In Spanish it beats BM25 on its
   own (0.790 vs 0.785), and on negation queries too.
-* **The reranker is where most of the gain is.** It adds +0.021 (rerank) and +0.039 (retrieval) over BM25, largest
+* **The reranker is where most of the gain is.** It adds +0.021 (rerank) and +0.045 (retrieval) over BM25, largest
   on queries with specs (+0.039), negation (+0.040) and hard queries (+0.031): attribute match / conflict
   features let it demote a "size 10" for a "size 8" query that shares every word. It costs about 2× BM25's
-  latency (p50 11.8 vs 5.8 ms) and ~$0.28 vs $0.14 per million queries in compute; at retail scale that is
-  negligible next to a +0.04 nDCG change, and `csre bench` shows the quality per millisecond flattens beyond
-  ~100 reranked products.
+  latency (p50 11.3 vs 6.0 ms) and compute (~$0.26 vs $0.14 per million queries); at retail scale that is
+  negligible next to a +0.04 nDCG change. `csre bench` shows quality still rising when the reranker sees the
+  whole keyword + semantic candidate union (100 → 200 products: +0.0075 nDCG@10 for ~0.5 ms), so it does.
+* **Scaling: keyword search, not semantic search, is what gets expensive.** Measured on shards of 0.5M / 1.0M /
+  1.5M products (real catalog + phase-1 distractors), BM25 p50 grows ~5.4 ms per million products while HNSW
+  stays at ~0.5 ms. A 25M-product catalog served as 17 parallel shards keeps p50 near 8 ms but needs ~51 GB of
+  index memory and ~$3 of retrieval compute per million queries (`csre bench`, `data/reports/bench.json`).
 * **Typos are the biggest remaining failure.** One typo cost every method ~0.23 nDCG@10. Catalog-vocabulary
-  spelling correction halves that (−0.113 with correction) and also helps real typos in the test queries.
+  spelling correction halves that (−0.12 with correction) and also helps real typos in the test queries.
 * **Offline gains, translated into shopper terms (simulated).** Replaying 3,000 traffic-weighted test queries
-  through the phase-1 click model, the reranker lifts purchases per search by +6% to +9% over BM25 across three
-  assumptions about unjudged products. A real pilot would need roughly 38K–59K searches per arm to detect that
+  through the phase-1 click model (100 simulated shoppers per query, the same shoppers for every approach), the
+  reranker lifts purchases per search by +5.8% to +9.3% over BM25 across three assumptions about unjudged products
+  (95% CIs all above +4%). A real pilot would need roughly 36K–66K searches per arm to detect that
   ([docs/pilot.md](docs/pilot.md)). These are simulated numbers built from the same labels: they size the pilot,
   they do not replace it.
 * **Feedback helps only queries seen before.** The feedback-aware ranker loses its advantage on query variants it
@@ -117,6 +123,9 @@ pytest -q        # 35 tests, no data needed
   and stop after two trees), and everything is reported on the untouched `test` split.
 * **Unjudged is unknown.** Full-catalog metrics are condensed (unjudged results dropped), with a pessimistic bound
   and judged@10 alongside.
+* **Latency work was profiling-driven.** BM25 p95 fell from 253 to 17 ms by replacing a sort of ~1M postings with a
+  linear scan; query parsing fell from 6.5 to 0.3 ms by porting the phase-1 Polars extractors to plain `re`
+  (parity-tested on 20,000 real queries, zero mismatches), which also removed the fork-safety hazard.
 * **Simulated is labelled simulated.** Prices and ratings are real (ESCI-S) where available; clicks, carts and
   purchases are always simulated, and conclusions that depend on them say so.
 

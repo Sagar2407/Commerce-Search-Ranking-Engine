@@ -134,7 +134,7 @@ class SearchService:
 
     def understanding(self, ctx, locale: str) -> dict:
         p = ctx.parsed
-        out = {"normalized": p.key, "attributes": {k: v for k, v in p.attrs.items() if v}, "pack_count": p.pack_count,
+        out = {"normalized": A.cache_key(p.text), "attributes": {k: v for k, v in p.attrs.items() if v}, "pack_count": p.pack_count,
                "brands": p.brands, "negated_terms": p.negated_terms}
         if ctx.cat_proba is not None and self.engine.qcat is not None:
             cp = ctx.cat_proba

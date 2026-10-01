@@ -282,6 +282,8 @@ def measure_latency(cfg: Config, eng: Engine, q: pl.DataFrame, seed: int, run_di
             eng.search(qq, loc, m, k=10)
     for qid, qq, loc in zip(qs["query_id"].to_list(), qs["query"].to_list(), qs["locale"].to_list()):
         for m in _METHODS:
+            # cold query: every timed request pays query parsing (the rest of the run primes the parse cache)
+            eng.parser.cache.pop((eng.rewrite(qq, loc)[0], loc), None)
             t = time.perf_counter()
             r = eng.search(qq, loc, m, k=10)
             wall = (time.perf_counter() - t) * 1e3

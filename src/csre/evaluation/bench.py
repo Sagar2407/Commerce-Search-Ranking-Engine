@@ -46,6 +46,7 @@ def rerank_depth(cfg: Config, eng: Engine, n: int = 600, depths=(0, 10, 20, 50, 
         for qid, text, loc in zip(q["query_id"].to_list(), q["query"].to_list(), q["locale"].to_list()):
             rows, gains, labels = judged[qid]
             jd = {int(r): (float(g), str(l)) for r, g, l in zip(rows, gains, labels)}
+            eng.parser.cache.pop((eng.rewrite(text, loc)[0], loc), None)   # cold query: pays parsing
             t = time.perf_counter()
             # same basis as `csre eval` retrieval: top 100 returned, condensed nDCG@10 over them
             resp = eng.search(text, loc, method, k=100, rerank_depth=max(d, 10),
