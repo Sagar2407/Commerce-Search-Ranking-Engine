@@ -82,7 +82,7 @@ main { padding-block: 18px 60px; }
 
 /* ---------- shop layout ---------- */
 .shop { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 20px; align-items: start; }
-@media (max-width: 900px) { .shop { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 900px) { .shop { grid-template-columns: minmax(0, 1fr); } .shop > aside { order: 2; } }
 .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: grid; gap: 14px; min-width: 0; }
 .panel h3 { font-size: .95rem; }
 .kv { display: grid; gap: 6px; }
@@ -160,7 +160,7 @@ main { padding-block: 18px 60px; }
 .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr)); gap: 16px; }
 .figure { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; min-width: 0; display: grid; gap: 10px; }
 .figure p { margin: 0; font-size: .85rem; color: var(--muted); max-width: 70ch; }
-.chart svg { width: 100%; height: auto; display: block; }
+.chart svg { width: 100%; height: auto; display: block; margin-inline: auto; }
 .chart text { fill: var(--muted); font: 11px var(--f-body); }
 .chart .lbl { fill: var(--ink); font-weight: 600; }
 .chart .grid line { stroke: var(--line); }
@@ -338,7 +338,12 @@ function whyPanel(e, judged) {
 
 function card(r, res) {
   const e = r.explanation;
-  const type = e?.result_type && (e.result_type.confidence ?? 1) >= 0.5 ? `<span class="pill ${e.result_type.label === "E" ? "good" : e.result_type.label === "I" ? "bad" : "tag"}" title="Predicted by the E/S/C/I classifier (${Math.round((e.result_type.confidence ?? 1) * 100)}% confident)">${esc(e.result_type.name)}</span>` : "";
+  const rt = e?.result_type, conf = rt?.confidence ?? 0;
+  // Exact is the default expectation, so it is only claimed when the classifier is very sure; the other types are
+  // the useful signal (a close alternative, an accessory, or probably off-target) and are shown from 40%.
+  const TYPE_BADGE = { E: ["Exact match", "good"], S: ["Substitute", "tag"], C: ["Complement / accessory", "tag"], I: ["Possibly off-target", "bad"] };
+  const showType = rt && (rt.label === "E" ? conf >= 0.8 : conf >= 0.4);
+  const type = showType ? `<span class="pill ${TYPE_BADGE[rt.label][1]}" title="Predicted by the result-type classifier (${Math.round(conf * 100)}% confident)">${esc(TYPE_BADGE[rt.label][0])}</span>` : "";
   const judged = res.judged_query_id != null ? labPill(r.judged_label) : "";
   const fbk = `${res.query}|${r.doc_id}`;
   return `<article class="card" data-doc="${esc(r.doc_id)}">
@@ -417,7 +422,7 @@ async function runSearch() {
 }
 
 async function renderRails(res) {
-  const subs = res.results.filter(r => r.explanation?.result_type?.label === "S" && (r.explanation.result_type.confidence ?? 1) >= 0.5).slice(0, 6);
+  const subs = res.results.filter(r => r.explanation?.result_type?.label === "S" && (r.explanation.result_type.confidence ?? 0) >= 0.4).slice(0, 6);
   let html = "";
   if (subs.length) html += `<div class="rail"><div class="eyebrow" style="margin-bottom:8px">Close alternatives (predicted substitutes)</div><div class="strip">${subs.map(mini).join("")}</div></div>`;
   $("#rails").innerHTML = html;
@@ -489,13 +494,18 @@ function scatter(pts, o) {
   const X = v => L + (Math.log10(v) - x0) / (x1 - x0) * (W - L - R), Y = v => T + (1 - (v - y0) / (y1 - y0)) * (H - T - B);
   const xt = []; for (let e = Math.floor(x0); e <= Math.ceil(x1); e++) for (const m of [1, 2, 5]) { const v = m * 10 ** e; if (Math.log10(v) >= x0 && Math.log10(v) <= x1) xt.push(v); }
   const yt = niceTicks(y0, y1, 4);
-  return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Quality versus latency by ranking approach">
+  // label placement: right of the point, nudged vertically so labels never overlap; flip left near the right edge
+  const lab = pts.map(p => ({ p, x: X(Math.max(0.01, p.ms)), y: Y(p.q) })).sort((a, b) => a.y - b.y);
+  for (let i = 1; i < lab.length; i++) lab[i].ly = Math.max(lab[i].y, (lab[i - 1].ly ?? lab[i - 1].y) + 14);
+  if (lab.length) lab[0].ly = lab[0].y;
+  return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" style="max-width:${W}px" role="img" aria-label="Quality versus latency by ranking approach">
     <g class="grid">${yt.map(v => `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}"/>`).join("")}${xt.map(v => `<line y1="${T}" y2="${H - B}" x1="${X(v)}" x2="${X(v)}"/>`).join("")}</g>
     ${yt.map(v => `<text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end">${v.toFixed(3)}</text>`).join("")}
     ${xt.map(v => `<text x="${X(v)}" y="${H - B + 16}" text-anchor="middle">${v >= 1 ? v : v.toFixed(2)}</text>`).join("")}
     <text x="${(L + W - R) / 2}" y="${H - 4}" text-anchor="middle">${esc(o.x)}</text>
     <text x="12" y="${(T + H - B) / 2}" text-anchor="middle" transform="rotate(-90 12 ${(T + H - B) / 2})">${esc(o.y)}</text>
-    ${pts.map(p => `<circle cx="${X(Math.max(0.01, p.ms))}" cy="${Y(p.q)}" r="6" style="fill:${mc(p.m)}"/><text class="lbl" x="${X(Math.max(0.01, p.ms)) + 9}" y="${Y(p.q) + 4}">${esc(labelOf(p.m))}</text>`).join("")}
+    ${lab.map(l => { const flip = l.x > W - R - 10; const tx = flip ? l.x - 9 : l.x + 9;
+      return `<circle cx="${l.x}" cy="${l.y}" r="6" style="fill:${mc(l.p.m)}"/>${Math.abs(l.ly - l.y) > 2 ? `<line x1="${l.x}" y1="${l.y}" x2="${tx}" y2="${l.ly}" style="stroke:${mc(l.p.m)}"/>` : ""}<text class="lbl" x="${tx}" y="${l.ly + 4}" text-anchor="${flip ? "end" : "start"}">${esc(labelOf(l.p.m))}</text>`; }).join("")}
   </svg></div>`;
 }
 
@@ -570,7 +580,7 @@ function lineChart(series, o) {
   let y0 = Math.min(...ys), y1 = Math.max(...ys); const pad = Math.max(1e-3, (y1 - y0) * 0.15); y0 -= pad; y1 += pad;
   const X = v => L + (v - x0) / ((x1 - x0) || 1) * (W - L - R), Y = v => T + (1 - (v - y0) / (y1 - y0)) * (H - T - B);
   const xt = niceTicks(x0, x1, 5), yt = niceTicks(y0, y1, 4);
-  return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.y)} by ${esc(o.x)}">
+  return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" style="max-width:${W}px" role="img" aria-label="${esc(o.y)} by ${esc(o.x)}">
     <g class="grid">${yt.map(v => `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}"/>`).join("")}</g>
     ${yt.map(v => `<text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end">${o.yfmt ? o.yfmt(v) : v}</text>`).join("")}
     ${xt.filter(v => v >= x0 && v <= x1).map(v => `<text x="${X(v)}" y="${H - B + 16}" text-anchor="middle">${v}</text>`).join("")}

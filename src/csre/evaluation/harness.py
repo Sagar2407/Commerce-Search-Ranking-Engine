@@ -310,7 +310,8 @@ def robustness(cfg: Config, eng: Engine, q: pl.DataFrame, seed: int, n_jobs: int
         return None
     n = int(cfg.get("eval.robustness_requests", 5000))
     v = rep.filter(pl.col("is_novel") & pl.col("query_id").is_in(q["query_id"].implode())) \
-           .unique("query", keep="first").join(q.select("query_id", pl.col("query").alias("orig")), on="query_id")
+           .unique("query", keep="first", maintain_order=True).sort("request_id") \
+           .join(q.select("query_id", pl.col("query").alias("orig")), on="query_id", maintain_order="left")
     if v.height == 0:
         return None
     v = v.sample(n=min(n, v.height), seed=seed, shuffle=True)
