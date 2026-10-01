@@ -338,7 +338,7 @@ function whyPanel(e, judged) {
 
 function card(r, res) {
   const e = r.explanation;
-  const type = e?.result_type ? `<span class="pill ${e.result_type.label === "E" ? "good" : e.result_type.label === "I" ? "bad" : "tag"}" title="Predicted by the E/S/C/I classifier">${esc(e.result_type.name)}</span>` : "";
+  const type = e?.result_type && (e.result_type.confidence ?? 1) >= 0.5 ? `<span class="pill ${e.result_type.label === "E" ? "good" : e.result_type.label === "I" ? "bad" : "tag"}" title="Predicted by the E/S/C/I classifier (${Math.round((e.result_type.confidence ?? 1) * 100)}% confident)">${esc(e.result_type.name)}</span>` : "";
   const judged = res.judged_query_id != null ? labPill(r.judged_label) : "";
   const fbk = `${res.query}|${r.doc_id}`;
   return `<article class="card" data-doc="${esc(r.doc_id)}">
@@ -416,7 +416,7 @@ async function runSearch() {
 }
 
 async function renderRails(res) {
-  const subs = res.results.filter(r => r.explanation?.result_type?.label === "S").slice(0, 6);
+  const subs = res.results.filter(r => r.explanation?.result_type?.label === "S" && (r.explanation.result_type.confidence ?? 1) >= 0.5).slice(0, 6);
   let html = "";
   if (subs.length) html += `<div class="rail"><div class="eyebrow" style="margin-bottom:8px">Close alternatives (predicted substitutes)</div><div class="strip">${subs.map(mini).join("")}</div></div>`;
   $("#rails").innerHTML = html;

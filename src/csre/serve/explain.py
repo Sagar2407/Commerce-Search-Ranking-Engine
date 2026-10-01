@@ -112,7 +112,7 @@ def explain_results(engine, resp, products: list[dict], top_n: int = 3) -> list[
             p = probs[i]
             labs = ["I", "C", "S", "E"]
             k = int(np.argmax(p))
-            e["result_type"] = {"label": labs[k], "name": TYPE_LABEL[labs[k]],
+            e["result_type"] = {"label": labs[k], "name": TYPE_LABEL[labs[k]], "confidence": round(float(p[k]), 3),
                                 "proba": {TYPE_LABEL[l]: round(float(p[j]), 3) for j, l in enumerate(labs)}}
         out.append(e)
     return out

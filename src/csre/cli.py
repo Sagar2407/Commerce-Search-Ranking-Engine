@@ -19,7 +19,8 @@ from .config import load_config
 STAGES = ["acquire", "taxonomy", "catalog", "judgments", "graph", "commerce", "traffic", "replay", "scale",
           "demo", "validate", "datacard"]
 SEARCH_STAGES = ["train-dense", "index", "train-qcat", "tune-hybrid", "train-ltr", "eval"]
-OTHER = ["serve", "bench", "snapshot", "models", "promote", "simulate-ab"]
+EXTRA_SEARCH = ["train-esci-class"]
+OTHER = ["serve", "bench", "snapshot", "models", "promote", "simulate-ab", *EXTRA_SEARCH]
 
 
 def run_search_stage(stage: str, cfg, args) -> None:
@@ -48,6 +49,9 @@ def run_search_stage(stage: str, cfg, args) -> None:
     elif stage == "bench":
         from .evaluation.bench import run_bench
         run_bench(cfg, args.corpus)
+    elif stage == "train-esci-class":
+        from .search.train import train_esci_class
+        train_esci_class(cfg, args.corpus or "full")
     elif stage == "simulate-ab":
         from .evaluation.online_sim import simulate_ab
         simulate_ab(cfg, args.corpus)

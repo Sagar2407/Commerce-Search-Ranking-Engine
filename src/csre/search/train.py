@@ -215,14 +215,29 @@ def train_ltr(cfg: Config, n_jobs: int | None = None, corpus: str = "full") -> d
     with stage_timer(cfg, "train_ltr") as info:
         eng = Engine(cfg, corpus, load_models=False)
         ds = eng.ds
-        tr = _queries(ds, "train")
+        # Stacking: the dense encoder and the query-department model were trained on `train` queries, so their
+        # scores on those queries are optimistic (the encoder has partly memorised their Exact products). A
+        # reranker fit there learns to over-trust them and degrades on unseen queries. The reranker is therefore
+        # fit on held-out `dev` queries the base models never saw (fit_fraction), early-stopped on the rest of
+        # dev, and evaluated on the untouched test split.
+        fit_split = L.get("fit_split", "dev")
+        src = _queries(ds, fit_split)
+        if fit_split == "dev":
+            u = (src["query_id"].hash(seed=cfg.seed) % 1000).to_numpy() / 1000.0
+            fit_mask = u < float(L.get("fit_fraction", 0.8))
+            tr, dv = src.filter(pl.Series(fit_mask)), src.filter(pl.Series(~fit_mask))
+        else:
+            tr, dv = src, _queries(ds, "dev")
         if int(L["max_train_queries"]) and tr.height > int(L["max_train_queries"]):
             tr = tr.sample(n=int(L["max_train_queries"]), seed=cfg.seed)
-        dv = _queries(ds, "dev")
         t = time.time()
-        Xtr, ytr, qtr, _ = extract_features(eng, tr, "train", n_jobs)
-        Xdv, ydv, qdv, _ = extract_features(eng, dv, "dev", n_jobs)
-        log.info("LTR features: train %s, dev %s (%.0fs)", Xtr.shape, Xdv.shape, time.time() - t)
+        Xtr, ytr, qtr, rtr = extract_features(eng, tr, fit_split, n_jobs)
+        Xdv, ydv, qdv, rdv = extract_features(eng, dv, "dev", n_jobs)
+        log.info("LTR features: fit %s, validation %s (%.0fs)", Xtr.shape, Xdv.shape, time.time() - t)
+        feat_dir = cfg.path("runs", eng.ds.name)
+        feat_dir.mkdir(parents=True, exist_ok=True)
+        np.savez_compressed(feat_dir / "ltr_features.npz", Xtr=Xtr, ytr=ytr, qtr=qtr, rtr=rtr, Xdv=Xdv, ydv=ydv,
+                            qdv=qdv, rdv=rdv, names=np.array(ALL_FEATURES))
         gains = L["label_gain"]
         params = {**{k: v for k, v in L["lightgbm"].items() if k not in ("num_boost_round", "early_stopping_rounds")},
                   "label_gain": gains, "metric": "ndcg", "eval_at": [10], "verbosity": -1, "seed": cfg.seed,
@@ -246,31 +261,48 @@ def train_ltr(cfg: Config, n_jobs: int | None = None, corpus: str = "full") -> d
                        "importance": {k: round(v / tot, 5) for k, v in sorted(imp.items(), key=lambda x: -x[1])}}
             versions[name] = reg.register(
                 name, lambda d, b=booster: b.save_model(str(d / "model.txt"), num_iteration=b.best_iteration),
-                params=params, metrics=metrics, data={"train_queries": int(len(np.unique(qtr))),
-                                                       "train_rows": int(len(ytr)), "dev_queries": int(len(np.unique(qdv)))},
+                params=params, metrics=metrics, data={"fit_split": fit_split, "fit_queries": int(len(np.unique(qtr))),
+                                                       "fit_rows": int(len(ytr)), "validation_queries": int(len(np.unique(qdv)))},
                 parents={k: v for k, v in eng.versions.items()})
             log.info("%s %s: dev nDCG@10 %.4f (iter %d) groups %s", name, versions[name], dev, booster.best_iteration,
                      group_imp)
 
-        # E / S / C / I result-type classifier (content features) for storefront badges
-        rng = np.random.default_rng(cfg.seed)
-        sub = rng.choice(len(ytr), size=min(len(ytr), 600_000), replace=False)
-        cols = [ALL_FEATURES.index(f) for f in CONTENT_FEATURES]
-        mc = lgb.train({"objective": "multiclass", "num_class": 4, "learning_rate": 0.1, "num_leaves": 63,
-                        "min_data_in_leaf": 100, "verbosity": -1, "seed": cfg.seed, "num_threads": n_jobs},
-                       lgb.Dataset(Xtr[sub][:, cols], ytr[sub], feature_name=CONTENT_FEATURES),
-                       num_boost_round=300)
-        pdv = mc.predict(Xdv[:, cols])
-        pred = pdv.argmax(1)
-        from sklearn.metrics import accuracy_score, f1_score  # noqa: PLC0415
-        mc_metrics = {"dev_accuracy": round(float(accuracy_score(ydv, pred)), 4),
-                      "dev_macro_f1": round(float(f1_score(ydv, pred, average="macro")), 4),
-                      "classes": [CODE_LABEL[i] for i in range(4)]}
-        versions["esci_class"] = reg.register("esci_class", lambda d: mc.save_model(str(d / "model.txt")),
-                                              metrics=mc_metrics, data={"train_rows": int(len(sub))})
-        log.info("esci_class %s: %s", versions["esci_class"], mc_metrics)
+        versions["esci_class"] = _fit_esci_class(cfg, Xtr, ytr, Xdv, ydv, n_jobs)
         info.update(rows=int(len(ytr)), versions=versions)
     return versions
+
+
+def _fit_esci_class(cfg: Config, Xtr, ytr, Xdv, ydv, n_jobs: int) -> str:
+    """E / S / C / I result-type classifier on content features (storefront badges).
+
+    Square-root class weights: Exact dominates the labels (~2/3), and unweighted training almost never predicts
+    Substitute or Irrelevant; full balancing costs too much accuracy. Complements stay hard to recognise from
+    content alone (they need product-relationship knowledge), which the storefront reflects by showing a type
+    only when the classifier is confident.
+    """
+    import lightgbm as lgb  # noqa: PLC0415
+    from sklearn.metrics import accuracy_score, f1_score  # noqa: PLC0415
+    cols = [ALL_FEATURES.index(f) for f in CONTENT_FEATURES]
+    cnt = np.bincount(ytr, minlength=4).astype(np.float64)
+    w = np.sqrt(len(ytr) / (4 * np.maximum(cnt, 1)))[ytr]
+    mc = lgb.train({"objective": "multiclass", "num_class": 4, "learning_rate": 0.1, "num_leaves": 63,
+                    "min_data_in_leaf": 100, "verbosity": -1, "seed": cfg.seed, "num_threads": n_jobs},
+                   lgb.Dataset(Xtr[:, cols], ytr, weight=w, feature_name=CONTENT_FEATURES), num_boost_round=200)
+    pred = mc.predict(Xdv[:, cols]).argmax(1)
+    metrics = {"dev_accuracy": round(float(accuracy_score(ydv, pred)), 4),
+               "dev_macro_f1": round(float(f1_score(ydv, pred, average="macro")), 4),
+               "dev_f1_by_class": dict(zip("ICSE", np.round(f1_score(ydv, pred, average=None), 4).tolist())),
+               "classes": [CODE_LABEL[i] for i in range(4)], "class_weighting": "sqrt-balanced"}
+    v = ModelRegistry(cfg).register("esci_class", lambda d: mc.save_model(str(d / "model.txt")), metrics=metrics,
+                                    data={"fit_rows": int(len(ytr))})
+    log.info("esci_class %s: %s", v, metrics)
+    return v
+
+
+def train_esci_class(cfg: Config, corpus: str = "full", n_jobs: int | None = None) -> str:
+    """Refit only the result-type classifier from the features saved by `train-ltr`."""
+    d = np.load(cfg.path("runs", corpus, "ltr_features.npz"), allow_pickle=True)
+    return _fit_esci_class(cfg, d["Xtr"], d["ytr"], d["Xdv"], d["ydv"], n_jobs or 2)
 
 
 # ======================================================================================

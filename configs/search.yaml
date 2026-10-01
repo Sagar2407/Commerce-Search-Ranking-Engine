@@ -57,6 +57,8 @@ search:
   ltr:
     candidates: 200            # union of BM25 + dense candidates scored by the reranker
     rerank_depth: 100          # how many fused candidates the reranker sees (latency / quality knob)
+    fit_split: dev             # held out from the encoder / department model (stacking); "train" to compare
+    fit_fraction: 0.8          # of dev queries used to fit; the rest early-stops
     max_train_queries: 60000
     lightgbm:
       objective: lambdarank
