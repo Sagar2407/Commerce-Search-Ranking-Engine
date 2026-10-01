@@ -25,7 +25,7 @@
     "check": "catalog.category_coverage",
     "passed": true,
     "detail": {
-      "known_category_share": 0.7089
+      "known_category_share": 0.9121
     }
   },
   {
@@ -85,7 +85,7 @@
     "passed": true,
     "detail": {
       "min_rate": 0.0578,
-      "max_rate": 0.2691
+      "max_rate": 0.2733
     }
   },
   {
@@ -144,10 +144,10 @@
     "check": "logs.ctr_monotone_in_label",
     "passed": true,
     "detail": {
-      "C": 0.0084,
-      "E": 0.0797,
-      "I": 0.0024,
-      "S": 0.0265
+      "C": 0.0089,
+      "E": 0.0794,
+      "I": 0.0025,
+      "S": 0.0275
     }
   },
   {

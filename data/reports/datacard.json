@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-09-18 23:44",
+  "generated_at": "2026-10-01 08:40",
   "ledger": [
     {
       "dataset": "catalog",
       "path": "data/processed/catalog",
       "provenance": "real+derived",
       "rows": 1814924,
-      "bytes": 1131470978,
+      "bytes": 1124113091,
       "purpose": "Cleaned products, extracted attributes, sparsity flags, department, retrieval text"
     },
     {
@@ -22,7 +22,7 @@
       "path": "data/processed/queries.parquet",
       "provenance": "real+derived",
       "rows": 130652,
-      "bytes": 5726345,
+      "bytes": 5784684,
       "purpose": "Query text, parsed attributes, label profile, intent diversity, slice flags"
     },
     {
@@ -30,7 +30,7 @@
       "path": "data/processed/graph/product_edges.parquet",
       "provenance": "derived",
       "rows": 17299770,
-      "bytes": 259883293,
+      "bytes": 246137643,
       "purpose": "Substitute, complement and co-exact product relations"
     },
     {
@@ -38,15 +38,15 @@
       "path": "data/processed/graph/related_queries.parquet",
       "provenance": "derived",
       "rows": 781312,
-      "bytes": 3863087,
+      "bytes": 3854537,
       "purpose": "Queries sharing Exact products"
     },
     {
       "dataset": "category_complements",
       "path": "data/processed/graph/category_complements.parquet",
       "provenance": "derived",
-      "rows": 266,
-      "bytes": 4896,
+      "rows": 284,
+      "bytes": 5240,
       "purpose": "Which departments complement which"
     },
     {
@@ -54,7 +54,7 @@
       "path": "data/synthetic/product_commerce.parquet",
       "provenance": "simulated",
       "rows": 1814924,
-      "bytes": 22391470,
+      "bytes": 23628025,
       "purpose": "Price, rating, reviews, stock (real where ESCI-S has it)"
     },
     {
@@ -69,24 +69,24 @@
       "dataset": "searches",
       "path": "data/synthetic/logs/searches",
       "provenance": "simulated",
-      "rows": 37709580,
-      "bytes": 832313499,
+      "rows": 37727855,
+      "bytes": 832678054,
       "purpose": "Sessions, users, time, logging policy, outcomes"
     },
     {
       "dataset": "impressions",
       "path": "data/synthetic/logs/impressions",
       "provenance": "simulated",
-      "rows": 634358747,
-      "bytes": 4332054070,
+      "rows": 634702424,
+      "bytes": 4333228041,
       "purpose": "Position, click, cart, purchase, dwell, feedback, propensity"
     },
     {
       "dataset": "query_doc_stats",
       "path": "data/synthetic/logs/query_doc_stats.parquet",
       "provenance": "simulated",
-      "rows": 2616646,
-      "bytes": 64729458,
+      "rows": 2617416,
+      "bytes": 72127204,
       "purpose": "Aggregated and IPS-weighted feedback per (query, product)"
     },
     {
@@ -102,7 +102,7 @@
       "path": "data/scale/synthetic_catalog",
       "provenance": "simulated",
       "rows": 23185076,
-      "bytes": 4217599718,
+      "bytes": 4218919585,
       "purpose": "Distractor products for 2.5M-25M doc latency tiers"
     },
     {
@@ -110,7 +110,7 @@
       "path": "data/demo",
       "provenance": "subset",
       "rows": null,
-      "bytes": 129397113,
+      "bytes": 133304192,
       "purpose": "Portable slice of every dataset for the storefront demo"
     }
   ],
@@ -127,7 +127,7 @@
         "has_audience": 0.27,
         "has_material": 0.4808,
         "has_color": 0.6034,
-        "known_category_share": 0.7571,
+        "known_category_share": 0.9382,
         "median_title_chars": 96.0,
         "median_desc_bullet_chars": 737.0
       },
@@ -142,7 +142,7 @@
         "has_audience": 0.1416,
         "has_material": 0.3246,
         "has_color": 0.4229,
-        "known_category_share": 0.6117,
+        "known_category_share": 0.8217,
         "median_title_chars": 53.0,
         "median_desc_bullet_chars": 170.0
       },
@@ -157,172 +157,172 @@
         "has_audience": 0.23,
         "has_material": 0.453,
         "has_color": 0.5939,
-        "known_category_share": 0.6104,
+        "known_category_share": 0.9078,
         "median_title_chars": 113.0,
         "median_desc_bullet_chars": 802.0
       }
     ],
     "categories": [
       {
-        "category": "Unknown",
-        "products": 528237,
-        "share": 0.2911
-      },
-      {
         "category": "Clothing, Shoes & Jewelry",
-        "products": 321504,
-        "share": 0.1771
+        "products": 356970,
+        "share": 0.1967
       },
       {
         "category": "Home & Kitchen",
-        "products": 183900,
-        "share": 0.1013
-      },
-      {
-        "category": "Books & Media",
-        "products": 171138,
-        "share": 0.0943
+        "products": 233552,
+        "share": 0.1287
       },
       {
         "category": "Electronics & Computers",
-        "products": 154822,
-        "share": 0.0853
+        "products": 181237,
+        "share": 0.0999
+      },
+      {
+        "category": "Unknown",
+        "products": 159582,
+        "share": 0.0879
       },
       {
         "category": "Tools, Home Improvement & Garden",
-        "products": 76221,
-        "share": 0.042
+        "products": 126563,
+        "share": 0.0697
       },
       {
-        "category": "Beauty & Personal Care",
-        "products": 64594,
-        "share": 0.0356
+        "category": "Books & Media",
+        "products": 102774,
+        "share": 0.0566
       },
       {
         "category": "Toys, Games & Hobbies",
-        "products": 64130,
-        "share": 0.0353
-      },
-      {
-        "category": "Health & Household",
-        "products": 50460,
-        "share": 0.0278
+        "products": 98997,
+        "share": 0.0545
       },
       {
         "category": "Sports & Outdoors",
-        "products": 49404,
-        "share": 0.0272
+        "products": 94874,
+        "share": 0.0523
       },
       {
-        "category": "Grocery & Gourmet Food",
-        "products": 40263,
-        "share": 0.0222
+        "category": "Beauty & Personal Care",
+        "products": 88144,
+        "share": 0.0486
+      },
+      {
+        "category": "Health & Household",
+        "products": 87085,
+        "share": 0.048
       },
       {
         "category": "Automotive",
-        "products": 29492,
-        "share": 0.0162
+        "products": 59279,
+        "share": 0.0327
       },
       {
-        "category": "Pet Supplies",
-        "products": 23684,
-        "share": 0.013
+        "category": "Grocery & Gourmet Food",
+        "products": 55636,
+        "share": 0.0307
       },
       {
         "category": "Office Products",
-        "products": 22110,
-        "share": 0.0122
+        "products": 48386,
+        "share": 0.0267
+      },
+      {
+        "category": "Pet Supplies",
+        "products": 32757,
+        "share": 0.018
       },
       {
         "category": "Arts, Crafts & Sewing",
-        "products": 17021,
-        "share": 0.0094
+        "products": 31944,
+        "share": 0.0176
       },
       {
         "category": "Baby Products",
-        "products": 10105,
-        "share": 0.0056
+        "products": 24604,
+        "share": 0.0136
       },
       {
         "category": "Industrial & Scientific",
-        "products": 4937,
-        "share": 0.0027
+        "products": 19798,
+        "share": 0.0109
       },
       {
         "category": "Musical Instruments",
-        "products": 2902,
-        "share": 0.0016
+        "products": 12742,
+        "share": 0.007
       }
     ]
   },
   "category_model": {
-    "n_seed_labels": 4109,
-    "n_weak_labels": 57973,
-    "accuracy": 0.7686,
-    "macro_f1": 0.67,
+    "n_seed_labels": 150008,
+    "n_weak_labels": 0,
+    "accuracy": 0.8639,
+    "macro_f1": 0.8299,
     "threshold": 0.5,
-    "accuracy_at_threshold": 0.9022,
-    "coverage_at_threshold": 0.7041,
+    "accuracy_at_threshold": 0.945,
+    "coverage_at_threshold": 0.7566,
     "by_locale": {
       "us": {
-        "n": 2762,
-        "accuracy": 0.7867,
-        "accuracy_at_tau": 0.8961,
-        "coverage_at_tau": 0.7455
+        "n": 102942,
+        "accuracy": 0.8743,
+        "accuracy_at_tau": 0.9421,
+        "coverage_at_tau": 0.8101
       },
       "es": {
-        "n": 612,
-        "accuracy": 0.7173,
-        "accuracy_at_tau": 0.9008,
-        "coverage_at_tau": 0.5931
+        "n": 22446,
+        "accuracy": 0.8487,
+        "accuracy_at_tau": 0.9485,
+        "coverage_at_tau": 0.68
       },
       "jp": {
-        "n": 735,
-        "accuracy": 0.7429,
-        "accuracy_at_tau": 0.9299,
-        "coverage_at_tau": 0.6408
+        "n": 24620,
+        "accuracy": 0.8341,
+        "accuracy_at_tau": 0.958,
+        "coverage_at_tau": 0.603
       }
     },
     "coverage_accuracy_curve": [
       {
         "threshold": 0.0,
         "coverage": 1.0,
-        "accuracy": 0.7686
+        "accuracy": 0.8639
       },
       {
         "threshold": 0.3,
-        "coverage": 0.8966,
-        "accuracy": 0.8225
+        "coverage": 0.9308,
+        "accuracy": 0.8943
       },
       {
         "threshold": 0.4,
-        "coverage": 0.8085,
-        "accuracy": 0.8582
+        "coverage": 0.854,
+        "accuracy": 0.919
       },
       {
         "threshold": 0.45,
-        "coverage": 0.7564,
-        "accuracy": 0.8819
+        "coverage": 0.808,
+        "accuracy": 0.9319
       },
       {
         "threshold": 0.5,
-        "coverage": 0.7041,
-        "accuracy": 0.9022
+        "coverage": 0.7566,
+        "accuracy": 0.945
       },
       {
         "threshold": 0.6,
-        "coverage": 0.5958,
-        "accuracy": 0.9326
+        "coverage": 0.6442,
+        "accuracy": 0.9654
       },
       {
         "threshold": 0.7,
-        "coverage": 0.4785,
-        "accuracy": 0.9552
+        "coverage": 0.5083,
+        "accuracy": 0.9791
       },
       {
         "threshold": 0.8,
-        "coverage": 0.3212,
-        "accuracy": 0.9712
+        "coverage": 0.3242,
+        "accuracy": 0.9876
       }
     ]
   },
@@ -439,9 +439,9 @@
       {
         "locale": "us",
         "queries": 97345,
-        "ambiguous": 0.2622,
+        "ambiguous": 0.2641,
         "underspecified": 0.1971,
-        "multi_intent": 0.0919,
+        "multi_intent": 0.0946,
         "negation": 0.037,
         "spec": 0.0642,
         "brand": 0.1753,
@@ -452,9 +452,9 @@
       {
         "locale": "jp",
         "queries": 18127,
-        "ambiguous": 0.309,
+        "ambiguous": 0.3193,
         "underspecified": 0.2683,
-        "multi_intent": 0.0606,
+        "multi_intent": 0.0793,
         "negation": 0.139,
         "spec": 0.0254,
         "brand": 0.0434,
@@ -465,9 +465,9 @@
       {
         "locale": "es",
         "queries": 15180,
-        "ambiguous": 0.2657,
+        "ambiguous": 0.2771,
         "underspecified": 0.2231,
-        "multi_intent": 0.0617,
+        "multi_intent": 0.0819,
         "negation": 0.1062,
         "spec": 0.0553,
         "brand": 0.1775,
@@ -480,9 +480,9 @@
       {
         "locale": "us",
         "queries": 22458,
-        "ambiguous": 5768,
+        "ambiguous": 5808,
         "underspecified": 4290,
-        "multi_intent": 2055,
+        "multi_intent": 2101,
         "negation": 955,
         "spec": 1484,
         "brand": 3943,
@@ -493,9 +493,9 @@
       {
         "locale": "jp",
         "queries": 4667,
-        "ambiguous": 1403,
+        "ambiguous": 1435,
         "underspecified": 1199,
-        "multi_intent": 288,
+        "multi_intent": 366,
         "negation": 728,
         "spec": 124,
         "brand": 203,
@@ -506,9 +506,9 @@
       {
         "locale": "es",
         "queries": 3844,
-        "ambiguous": 945,
+        "ambiguous": 1027,
         "underspecified": 790,
-        "multi_intent": 226,
+        "multi_intent": 345,
         "negation": 460,
         "spec": 223,
         "brand": 655,
@@ -613,11 +613,11 @@
         "slice": "ambiguous_multi_intent",
         "examples": [
           "Pockets on both sides. Brown leather. Extra large. ",
+          "a girl without freckles is night without stars",
           "antibacterial wipes for rear end",
-          "bedroom unicorn stuff",
           "bendy and the ink machine",
-          "bracelet making kit age 8",
-          "chapstick holder"
+          "bolster foam",
+          "castile soap wipes"
         ]
       },
       {
@@ -683,88 +683,88 @@
     "top_category_complements": [
       {
         "src_category": "Arts, Crafts & Sewing",
-        "dst_category": "Home & Kitchen",
-        "share": 0.042
+        "dst_category": "Office Products",
+        "share": 0.043
       },
       {
         "src_category": "Automotive",
         "dst_category": "Tools, Home Improvement & Garden",
-        "share": 0.055
+        "share": 0.046
       },
       {
         "src_category": "Baby Products",
         "dst_category": "Home & Kitchen",
-        "share": 0.101
+        "share": 0.064
       },
       {
         "src_category": "Beauty & Personal Care",
-        "dst_category": "Tools, Home Improvement & Garden",
+        "dst_category": "Health & Household",
         "share": 0.022
       },
       {
         "src_category": "Books & Media",
         "dst_category": "Toys, Games & Hobbies",
-        "share": 0.106
+        "share": 0.231
       },
       {
         "src_category": "Clothing, Shoes & Jewelry",
         "dst_category": "Sports & Outdoors",
-        "share": 0.026
+        "share": 0.036
       },
       {
         "src_category": "Electronics & Computers",
-        "dst_category": "Books & Media",
-        "share": 0.012
+        "dst_category": "Toys, Games & Hobbies",
+        "share": 0.011
       },
       {
         "src_category": "Grocery & Gourmet Food",
         "dst_category": "Home & Kitchen",
-        "share": 0.192
+        "share": 0.283
       },
       {
         "src_category": "Health & Household",
         "dst_category": "Home & Kitchen",
-        "share": 0.071
+        "share": 0.065
       },
       {
         "src_category": "Home & Kitchen",
         "dst_category": "Tools, Home Improvement & Garden",
-        "share": 0.047
+        "share": 0.069
       },
       {
         "src_category": "Industrial & Scientific",
         "dst_category": "Tools, Home Improvement & Garden",
-        "share": 0.1
+        "share": 0.229
       },
       {
         "src_category": "Musical Instruments",
         "dst_category": "Electronics & Computers",
-        "share": 0.353
+        "share": 0.039
       },
       {
         "src_category": "Office Products",
         "dst_category": "Home & Kitchen",
-        "share": 0.056
+        "share": 0.064
       },
       {
         "src_category": "Pet Supplies",
-        "dst_category": "Home & Kitchen",
-        "share": 0.033
+        "dst_category": "Tools, Home Improvement & Garden",
+        "share": 0.024
       },
       {
         "src_category": "Sports & Outdoors",
         "dst_category": "Clothing, Shoes & Jewelry",
-        "share": 0.051
+        "share": 0.035
       },
       {
         "src_category": "Tools, Home Improvement & Garden",
         "dst_category": "Home & Kitchen",
-        "share": 0.061
+        "share": 0.054
       },
       {
         "src_category": "Toys, Games & Hobbies",
-        "dst_category": "Electronics & Computers",
-        "share": 0.061
+        "dst_category": "Clothing, Shoes & Jewelry",
+        "share": 0.042
       }
     ]
   },
@@ -772,55 +772,55 @@
     {
       "locale": "es",
       "currency": "EUR",
-      "price_p10": 9.99,
-      "price_median": 32.99,
-      "price_p90": 114.99,
+      "price_p10": 8.99,
+      "price_median": 29.99,
+      "price_p90": 130.99,
       "avg_stars": 4.21,
-      "median_ratings": 43.0,
+      "median_ratings": 145.0,
       "in_stock_share": 0.9396,
-      "real_rows": 576
+      "real_rows": 200847
     },
     {
       "locale": "jp",
       "currency": "JPY",
-      "price_p10": 820.0,
-      "price_median": 2500.0,
-      "price_p90": 7990.0,
-      "avg_stars": 4.12,
-      "median_ratings": 60.0,
+      "price_p10": 736.0,
+      "price_median": 2400.0,
+      "price_p90": 8580.0,
+      "avg_stars": 4.07,
+      "median_ratings": 84.0,
       "in_stock_share": 0.9404,
-      "real_rows": 710
+      "real_rows": 224903
     },
     {
       "locale": "us",
       "currency": "USD",
-      "price_p10": 9.99,
-      "price_median": 29.99,
-      "price_p90": 96.99,
-      "avg_stars": 4.4,
-      "median_ratings": 362.0,
+      "price_p10": 8.99,
+      "price_median": 24.99,
+      "price_p90": 87.95,
+      "avg_stars": 4.41,
+      "median_ratings": 496.0,
       "in_stock_share": 0.9399,
-      "real_rows": 2841
+      "real_rows": 995492
     }
   ],
   "traffic": {
     "totals": {
-      "searches": 37709580,
+      "searches": 37727855,
       "sessions": 30000000,
       "users": 3463744,
       "queries_with_traffic": 130652,
       "first_day": "2026-05-31",
       "last_day": "2026-07-31",
-      "abandonment_rate": 0.3224,
-      "reformulation_share": 0.2044,
-      "search_ctr": 0.6776,
-      "search_add_to_cart_rate": 0.2286,
-      "search_conversion_rate": 0.1424
+      "abandonment_rate": 0.3236,
+      "reformulation_share": 0.2048,
+      "search_ctr": 0.6764,
+      "search_add_to_cart_rate": 0.2281,
+      "search_conversion_rate": 0.1421
     },
     "impressions": {
-      "impressions": 634358747,
+      "impressions": 634702424,
       "ctr": 0.0629,
-      "explicit_feedback": 645093
+      "explicit_feedback": 645632
     },
     "ctr_by_position": [
       {
@@ -829,27 +829,27 @@
       },
       {
         "position": 2,
-        "ctr": 0.1606
+        "ctr": 0.1601
       },
       {
         "position": 3,
-        "ctr": 0.1052
+        "ctr": 0.1043
       },
       {
         "position": 4,
-        "ctr": 0.0774
+        "ctr": 0.0773
       },
       {
         "position": 5,
-        "ctr": 0.0616
+        "ctr": 0.0612
       },
       {
         "position": 6,
-        "ctr": 0.0502
+        "ctr": 0.0506
       },
       {
         "position": 7,
-        "ctr": 0.0432
+        "ctr": 0.0431
       },
       {
         "position": 8,
@@ -857,27 +857,27 @@
       },
       {
         "position": 9,
-        "ctr": 0.0331
+        "ctr": 0.0324
       },
       {
         "position": 10,
-        "ctr": 0.0286
+        "ctr": 0.0289
       },
       {
         "position": 11,
-        "ctr": 0.0254
+        "ctr": 0.0257
       },
       {
         "position": 12,
-        "ctr": 0.0228
+        "ctr": 0.0229
       },
       {
         "position": 13,
-        "ctr": 0.021
+        "ctr": 0.0208
       },
       {
         "position": 14,
-        "ctr": 0.0184
+        "ctr": 0.0187
       },
       {
         "position": 15,
@@ -885,19 +885,19 @@
       },
       {
         "position": 16,
-        "ctr": 0.0151
+        "ctr": 0.015
       },
       {
         "position": 17,
-        "ctr": 0.0165
+        "ctr": 0.017
       },
       {
         "position": 18,
-        "ctr": 0.0148
+        "ctr": 0.0147
       },
       {
         "position": 19,
-        "ctr": 0.0136
+        "ctr": 0.0133
       },
       {
         "position": 20,
@@ -907,639 +907,639 @@
     "ctr_by_label": [
       {
         "esci_label": "C",
-        "ctr": 0.0089,
-        "cart_rate": 0.00159,
-        "purchase_rate": 0.0008
+        "ctr": 0.0088,
+        "cart_rate": 0.00165,
+        "purchase_rate": 0.0009
       },
       {
         "esci_label": "E",
-        "ctr": 0.0797,
-        "cart_rate": 0.01989,
-        "purchase_rate": 0.01192
+        "ctr": 0.0795,
+        "cart_rate": 0.01987,
+        "purchase_rate": 0.01193
       },
       {
         "esci_label": "I",
-        "ctr": 0.0023,
-        "cart_rate": 5e-05,
+        "ctr": 0.0024,
+        "cart_rate": 6e-05,
         "purchase_rate": 1e-05
       },
       {
         "esci_label": "S",
-        "ctr": 0.0265,
-        "cart_rate": 0.00399,
-        "purchase_rate": 0.00197
+        "ctr": 0.0276,
+        "cart_rate": 0.00415,
+        "purchase_rate": 0.00208
       }
     ],
     "daily": [
       {
         "day": "2026-05-31",
-        "searches": 17219
+        "searches": 17320
       },
       {
         "day": "2026-06-01",
-        "searches": 433715
+        "searches": 434205
       },
       {
         "day": "2026-06-02",
-        "searches": 573368
+        "searches": 573395
       },
       {
         "day": "2026-06-03",
-        "searches": 573242
+        "searches": 573553
       },
       {
         "day": "2026-06-04",
-        "searches": 573437
+        "searches": 573387
       },
       {
         "day": "2026-06-05",
-        "searches": 577666
+        "searches": 578209
       },
       {
         "day": "2026-06-06",
-        "searches": 641198
+        "searches": 641264
       },
       {
         "day": "2026-06-07",
-        "searches": 659323
+        "searches": 659944
       },
       {
         "day": "2026-06-08",
-        "searches": 598988
+        "searches": 599370
       },
       {
         "day": "2026-06-09",
-        "searches": 579529
+        "searches": 580246
       },
       {
         "day": "2026-06-10",
-        "searches": 580807
+        "searches": 581319
       },
       {
         "day": "2026-06-11",
-        "searches": 582698
+        "searches": 582911
       },
       {
         "day": "2026-06-12",
-        "searches": 585770
+        "searches": 586627
       },
       {
         "day": "2026-06-13",
-        "searches": 650949
+        "searches": 650904
       },
       {
         "day": "2026-06-14",
-        "searches": 670134
+        "searches": 670597
       },
       {
         "day": "2026-06-15",
-        "searches": 607615
+        "searches": 607873
       },
       {
         "day": "2026-06-16",
-        "searches": 587059
+        "searches": 587626
       },
       {
         "day": "2026-06-17",
-        "searches": 587627
+        "searches": 587837
       },
       {
         "day": "2026-06-18",
-        "searches": 589549
+        "searches": 590200
       },
       {
         "day": "2026-06-19",
-        "searches": 593756
+        "searches": 594061
       },
       {
         "day": "2026-06-20",
-        "searches": 659524
+        "searches": 659710
       },
       {
         "day": "2026-06-21",
-        "searches": 678548
+        "searches": 678990
       },
       {
         "day": "2026-06-22",
-        "searches": 615360
+        "searches": 615724
       },
       {
         "day": "2026-06-23",
-        "searches": 595755
+        "searches": 595617
       },
       {
         "day": "2026-06-24",
-        "searches": 594267
+        "searches": 594360
       },
       {
         "day": "2026-06-25",
-        "searches": 597674
+        "searches": 598300
       },
       {
         "day": "2026-06-26",
-        "searches": 603417
+        "searches": 603516
       },
       {
         "day": "2026-06-27",
-        "searches": 668616
+        "searches": 669274
       },
       {
         "day": "2026-06-28",
-        "searches": 687147
+        "searches": 687875
       },
       {
         "day": "2026-06-29",
-        "searches": 622852
+        "searches": 622915
       },
       {
         "day": "2026-06-30",
-        "searches": 604052
+        "searches": 603988
       },
       {
         "day": "2026-07-01",
-        "searches": 605246
+        "searches": 605653
       },
       {
         "day": "2026-07-02",
-        "searches": 604410
+        "searches": 604530
       },
       {
         "day": "2026-07-03",
-        "searches": 608013
+        "searches": 608048
       },
       {
         "day": "2026-07-04",
-        "searches": 678039
+        "searches": 678818
       },
       {
         "day": "2026-07-05",
-        "searches": 696855
+        "searches": 697754
       },
       {
         "day": "2026-07-06",
-        "searches": 633658
+        "searches": 633641
       },
       {
         "day": "2026-07-07",
-        "searches": 611366
+        "searches": 611529
       },
       {
         "day": "2026-07-08",
-        "searches": 612012
+        "searches": 612397
       },
       {
         "day": "2026-07-09",
-        "searches": 613565
+        "searches": 613919
       },
       {
         "day": "2026-07-10",
-        "searches": 616377
+        "searches": 617124
       },
       {
         "day": "2026-07-11",
-        "searches": 686457
+        "searches": 687070
       },
       {
         "day": "2026-07-12",
-        "searches": 707480
+        "searches": 707150
       },
       {
         "day": "2026-07-13",
-        "searches": 640291
+        "searches": 640250
       },
       {
         "day": "2026-07-14",
-        "searches": 619547
+        "searches": 619463
       },
       {
         "day": "2026-07-15",
-        "searches": 620489
+        "searches": 620649
       },
       {
         "day": "2026-07-16",
-        "searches": 622500
+        "searches": 622949
       },
       {
         "day": "2026-07-17",
-        "searches": 625359
+        "searches": 625889
       },
       {
         "day": "2026-07-18",
-        "searches": 695550
+        "searches": 695622
       },
       {
         "day": "2026-07-19",
-        "searches": 716129
+        "searches": 716044
       },
       {
         "day": "2026-07-20",
-        "searches": 647478
+        "searches": 647920
       },
       {
         "day": "2026-07-21",
-        "searches": 629588
+        "searches": 629418
       },
       {
         "day": "2026-07-22",
-        "searches": 629272
+        "searches": 629448
       },
       {
         "day": "2026-07-23",
-        "searches": 630536
+        "searches": 631126
       },
       {
         "day": "2026-07-24",
-        "searches": 633701
+        "searches": 633583
       },
       {
         "day": "2026-07-25",
-        "searches": 704780
+        "searches": 705323
       },
       {
         "day": "2026-07-26",
-        "searches": 724793
+        "searches": 724839
       },
       {
         "day": "2026-07-27",
-        "searches": 658621
+        "searches": 658773
       },
       {
         "day": "2026-07-28",
-        "searches": 636603
+        "searches": 637215
       },
       {
         "day": "2026-07-29",
-        "searches": 637269
+        "searches": 637434
       },
       {
         "day": "2026-07-30",
-        "searches": 619565
+        "searches": 619973
       },
       {
         "day": "2026-07-31",
-        "searches": 153170
+        "searches": 153187
       }
     ],
     "by_hour_utc": [
       {
         "hour_utc": 0,
         "locale": "es",
-        "searches": 761
+        "searches": 760
       },
       {
         "hour_utc": 0,
         "locale": "jp",
-        "searches": 13339
+        "searches": 13405
       },
       {
         "hour_utc": 0,
         "locale": "us",
-        "searches": 53848
+        "searches": 53773
       },
       {
         "hour_utc": 1,
         "locale": "es",
-        "searches": 681
+        "searches": 672
       },
       {
         "hour_utc": 1,
         "locale": "jp",
-        "searches": 16393
+        "searches": 16479
       },
       {
         "hour_utc": 1,
         "locale": "us",
-        "searches": 59567
+        "searches": 59459
       },
       {
         "hour_utc": 2,
         "locale": "es",
-        "searches": 658
+        "searches": 662
       },
       {
         "hour_utc": 2,
         "locale": "jp",
-        "searches": 17678
+        "searches": 17742
       },
       {
         "hour_utc": 2,
         "locale": "us",
-        "searches": 62658
+        "searches": 62550
       },
       {
         "hour_utc": 3,
         "locale": "es",
-        "searches": 919
+        "searches": 909
       },
       {
         "hour_utc": 3,
         "locale": "jp",
-        "searches": 19255
+        "searches": 19334
       },
       {
         "hour_utc": 3,
         "locale": "us",
-        "searches": 57844
+        "searches": 57926
       },
       {
         "hour_utc": 4,
         "locale": "es",
-        "searches": 1616
+        "searches": 1602
       },
       {
         "hour_utc": 4,
         "locale": "jp",
-        "searches": 18604
+        "searches": 18635
       },
       {
         "hour_utc": 4,
         "locale": "us",
-        "searches": 43525
+        "searches": 43500
       },
       {
         "hour_utc": 5,
         "locale": "es",
-        "searches": 3051
+        "searches": 3053
       },
       {
         "hour_utc": 5,
         "locale": "jp",
-        "searches": 17471
+        "searches": 17542
       },
       {
         "hour_utc": 5,
         "locale": "us",
-        "searches": 25575
+        "searches": 25579
       },
       {
         "hour_utc": 6,
         "locale": "es",
-        "searches": 4985
+        "searches": 4976
       },
       {
         "hour_utc": 6,
         "locale": "jp",
-        "searches": 17168
+        "searches": 17229
       },
       {
         "hour_utc": 6,
         "locale": "us",
-        "searches": 13421
+        "searches": 13391
       },
       {
         "hour_utc": 7,
         "locale": "es",
-        "searches": 6656
+        "searches": 6618
       },
       {
         "hour_utc": 7,
         "locale": "jp",
-        "searches": 17676
+        "searches": 17732
       },
       {
         "hour_utc": 7,
         "locale": "us",
-        "searches": 7919
+        "searches": 7943
       },
       {
         "hour_utc": 8,
         "locale": "es",
-        "searches": 7864
+        "searches": 7811
       },
       {
         "hour_utc": 8,
         "locale": "jp",
-        "searches": 18742
+        "searches": 18844
       },
       {
         "hour_utc": 8,
         "locale": "us",
-        "searches": 4551
+        "searches": 4576
       },
       {
         "hour_utc": 9,
         "locale": "es",
-        "searches": 8636
+        "searches": 8645
       },
       {
         "hour_utc": 9,
         "locale": "jp",
-        "searches": 20219
+        "searches": 20305
       },
       {
         "hour_utc": 9,
         "locale": "us",
-        "searches": 3355
+        "searches": 3366
       },
       {
         "hour_utc": 10,
         "locale": "es",
-        "searches": 9354
+        "searches": 9344
       },
       {
         "hour_utc": 10,
         "locale": "jp",
-        "searches": 22819
+        "searches": 22918
       },
       {
         "hour_utc": 10,
         "locale": "us",
-        "searches": 3286
+        "searches": 3290
       },
       {
         "hour_utc": 11,
         "locale": "es",
-        "searches": 8956
+        "searches": 8907
       },
       {
         "hour_utc": 11,
         "locale": "jp",
-        "searches": 23710
+        "searches": 23789
       },
       {
         "hour_utc": 11,
         "locale": "us",
-        "searches": 4505
+        "searches": 4506
       },
       {
         "hour_utc": 12,
         "locale": "es",
-        "searches": 8570
+        "searches": 8508
       },
       {
         "hour_utc": 12,
         "locale": "jp",
-        "searches": 22239
+        "searches": 22255
       },
       {
         "hour_utc": 12,
         "locale": "us",
-        "searches": 8815
+        "searches": 8824
       },
       {
         "hour_utc": 13,
         "locale": "es",
-        "searches": 8181
+        "searches": 8220
       },
       {
         "hour_utc": 13,
         "locale": "jp",
-        "searches": 16768
+        "searches": 16756
       },
       {
         "hour_utc": 13,
         "locale": "us",
-        "searches": 16956
+        "searches": 16951
       },
       {
         "hour_utc": 14,
         "locale": "es",
-        "searches": 8555
+        "searches": 8607
       },
       {
         "hour_utc": 14,
         "locale": "jp",
-        "searches": 9972
+        "searches": 9990
       },
       {
         "hour_utc": 14,
         "locale": "us",
-        "searches": 26900
+        "searches": 26863
       },
       {
         "hour_utc": 15,
         "locale": "es",
-        "searches": 9141
+        "searches": 9107
       },
       {
         "hour_utc": 15,
         "locale": "jp",
-        "searches": 5176
+        "searches": 5183
       },
       {
         "hour_utc": 15,
         "locale": "us",
-        "searches": 36136
+        "searches": 36035
       },
       {
         "hour_utc": 16,
         "locale": "es",
-        "searches": 9829
+        "searches": 9785
       },
       {
         "hour_utc": 16,
         "locale": "jp",
-        "searches": 2970
+        "searches": 3010
       },
       {
         "hour_utc": 16,
         "locale": "us",
-        "searches": 42571
+        "searches": 42576
       },
       {
         "hour_utc": 17,
         "locale": "es",
-        "searches": 10912
+        "searches": 10881
       },
       {
         "hour_utc": 17,
         "locale": "jp",
-        "searches": 1709
+        "searches": 1702
       },
       {
         "hour_utc": 17,
         "locale": "us",
-        "searches": 47279
+        "searches": 47149
       },
       {
         "hour_utc": 18,
         "locale": "es",
-        "searches": 11742
+        "searches": 11727
       },
       {
         "hour_utc": 18,
         "locale": "jp",
-        "searches": 1390
+        "searches": 1407
       },
       {
         "hour_utc": 18,
         "locale": "us",
-        "searches": 49983
+        "searches": 50014
       },
       {
         "hour_utc": 19,
         "locale": "es",
-        "searches": 10776
+        "searches": 10705
       },
       {
         "hour_utc": 19,
         "locale": "jp",
-        "searches": 1290
+        "searches": 1281
       },
       {
         "hour_utc": 19,
         "locale": "us",
-        "searches": 47513
+        "searches": 47552
       },
       {
         "hour_utc": 20,
         "locale": "es",
-        "searches": 8038
+        "searches": 8059
       },
       {
         "hour_utc": 20,
         "locale": "jp",
-        "searches": 1659
+        "searches": 1693
       },
       {
         "hour_utc": 20,
         "locale": "us",
-        "searches": 45676
+        "searches": 45721
       },
       {
         "hour_utc": 21,
         "locale": "es",
-        "searches": 4764
+        "searches": 4733
       },
       {
         "hour_utc": 21,
         "locale": "jp",
-        "searches": 3543
+        "searches": 3527
       },
       {
         "hour_utc": 21,
         "locale": "us",
-        "searches": 44768
+        "searches": 44727
       },
       {
         "hour_utc": 22,
         "locale": "es",
-        "searches": 2562
+        "searches": 2570
       },
       {
         "hour_utc": 22,
         "locale": "jp",
-        "searches": 6294
+        "searches": 6336
       },
       {
         "hour_utc": 22,
         "locale": "us",
-        "searches": 46280
+        "searches": 46213
       },
       {
         "hour_utc": 23,
         "locale": "es",
-        "searches": 1440
+        "searches": 1422
       },
       {
         "hour_utc": 23,
         "locale": "jp",
-        "searches": 10214
+        "searches": 10192
       },
       {
         "hour_utc": 23,
         "locale": "us",
-        "searches": 49503
+        "searches": 49522
       }
     ],
     "popularity_buckets": [
@@ -1567,9 +1567,9 @@
         66.0,
         120.0,
         411.0,
-        2420.4700000000157
+        2419.9800000000105
       ],
-      "max": 659081
+      "max": 659429
     }
   },
   "replay": {
@@ -1673,92 +1673,88 @@
     "note": "Tier T = full real catalog + the first (T - real) synthetic rows in shard order. Synthetic docs are unjudged distractors for latency/throughput/cost scaling only."
   },
   "footprint_bytes": {
-    "raw": 1172396700,
-    "processed": 1512362637,
-    "synthetic": 5385517129,
-    "scale": 4217600497
+    "raw": 1172396695,
+    "processed": 1688893488,
+    "synthetic": 5395689956,
+    "scale": 4218920364
   },
   "stage_runs": {
     "taxonomy": {
       "stage": "taxonomy",
-      "rows": 62082,
-      "accuracy": 0.7686,
-      "coverage": 0.7041,
-      "seconds": 295.33,
-      "rows_per_sec": 210,
-      "finished_at": "2026-09-18T22:58:48"
+      "seconds": 845.45,
+      "finished_at": "2026-10-01T07:32:11"
     },
     "catalog": {
       "stage": "catalog",
       "rows": 1814924,
-      "bytes": 1131470978,
-      "seconds": 986.36,
-      "rows_per_sec": 1840,
-      "finished_at": "2026-09-18T23:15:16"
+      "bytes": 1124113091,
+      "seconds": 1472.11,
+      "rows_per_sec": 1232,
+      "finished_at": "2026-10-01T07:57:14"
     },
     "judgments": {
       "stage": "judgments",
       "rows": 2621285,
       "queries": 130652,
       "split_queries": {
+        "test": 30969,
         "train": 89694,
-        "dev": 9989,
-        "test": 30969
+        "dev": 9989
       },
       "slice_rates": {
         "slice_underspecified": 0.21,
-        "slice_multi_intent": 0.0841,
+        "slice_multi_intent": 0.091,
         "slice_negation": 0.0592,
         "slice_spec": 0.0578,
         "slice_brand": 0.1573,
         "slice_sparse_products": 0.1522,
         "slice_hard": 0.3697,
         "slice_all_exact": 0.2486,
-        "slice_ambiguous": 0.2691
+        "slice_ambiguous": 0.2733
       },
-      "seconds": 68.65,
-      "rows_per_sec": 38183,
-      "finished_at": "2026-09-18T23:20:18"
+      "seconds": 104.7,
+      "rows_per_sec": 25036,
+      "finished_at": "2026-10-01T07:58:59"
     },
     "graph": {
       "stage": "graph",
       "rows": 17299770,
       "edges": {
-        "co_exact": 11082493,
         "complement": 758695,
-        "substitute": 5458582
+        "substitute": 5458582,
+        "co_exact": 11082493
       },
       "related_query_pairs": 781312,
       "queries_with_related": 95177,
-      "bytes": 263751276,
-      "seconds": 19.73,
-      "rows_per_sec": 876825,
-      "finished_at": "2026-09-18T23:20:40"
+      "bytes": 249997420,
+      "seconds": 27.87,
+      "rows_per_sec": 620730,
+      "finished_at": "2026-10-01T07:59:28"
     },
     "sim_commerce": {
       "stage": "sim_commerce",
       "rows": 1814924,
-      "real_rows": 4127,
+      "real_rows": 1421242,
       "median_price": {
-        "jp": 2500.0,
-        "es": 32.99,
-        "us": 29.99
+        "us": 24.99,
+        "es": 29.99,
+        "jp": 2400.0
       },
-      "seconds": 4.65,
-      "rows_per_sec": 390306,
-      "finished_at": "2026-09-18T23:20:51"
+      "seconds": 11.26,
+      "rows_per_sec": 161183,
+      "finished_at": "2026-10-01T08:02:36"
     },
     "sim_traffic": {
       "stage": "sim_traffic",
       "shards": 120,
       "n_sessions": 30000000,
-      "rows": 634358747,
-      "searches": 37709580,
-      "impressions": 634358747,
-      "bytes": 5229097027,
-      "seconds": 896.04,
-      "rows_per_sec": 707958,
-      "finished_at": "2026-09-18T23:37:39"
+      "rows": 634702424,
+      "searches": 37727855,
+      "impressions": 634702424,
+      "query_doc_stats_rows": 2617416,
+      "bytes": 5238033299,
+      "note": "aggregation re-run separately (query-hash partitioned) after an out-of-memory kill",
+      "finished_at": "2026-10-01T08:29:28"
     },
     "scale": {
       "stage": "scale",
@@ -1769,10 +1765,10 @@
         10000000,
         25000000
       ],
-      "bytes": 4217600497,
-      "seconds": 379.39,
-      "rows_per_sec": 61111,
-      "finished_at": "2026-09-18T23:30:48"
+      "bytes": 4218920364,
+      "seconds": 523.82,
+      "rows_per_sec": 44261,
+      "finished_at": "2026-10-01T08:39:18"
     },
     "sim_replay": {
       "stage": "sim_replay",
@@ -1782,29 +1778,107 @@
       "ideal_hit_rate_raw_text": 0.8472,
       "ideal_hit_rate_normalised": 0.8598,
       "peak_rps": 142,
-      "seconds": 28.03,
-      "rows_per_sec": 356760,
-      "finished_at": "2026-09-18T23:42:29"
+      "seconds": 54.96,
+      "rows_per_sec": 181950,
+      "finished_at": "2026-10-01T08:30:33"
     },
     "demo": {
       "stage": "demo",
-      "rows": 1230808,
+      "rows": 1360427,
       "files": {
-        "queries.parquet": 3025,
-        "judgments.parquet": 57075,
-        "catalog.parquet": 150663,
-        "product_commerce.parquet": 150663,
-        "product_edges.parquet": 588641,
-        "related_queries.parquet": 20492,
-        "query_doc_stats.parquet": 56958,
-        "query_popularity.parquet": 3025,
+        "queries.parquet": 3028,
+        "judgments.parquet": 57262,
+        "catalog.parquet": 150819,
+        "product_commerce.parquet": 150819,
+        "product_edges.parquet": 590432,
+        "related_queries.parquet": 20561,
+        "query_doc_stats.parquet": 57153,
+        "query_popularity.parquet": 3028,
         "replay_sample.parquet": 200000,
-        "category_complements.parquet": 266
+        "category_complements.parquet": 284,
+        "product_meta.parquet": 127041
       },
-      "bytes": 129397113,
-      "seconds": 5.99,
-      "rows_per_sec": 205477,
-      "finished_at": "2026-09-18T23:39:20"
+      "bytes": 133304192,
+      "seconds": 16.83,
+      "rows_per_sec": 80833,
+      "finished_at": "2026-10-01T08:39:36"
+    },
+    "demo_portable": {
+      "stage": "demo_portable",
+      "rows": 327647,
+      "files": {
+        "queries.parquet": 1540,
+        "judgments.parquet": 29378,
+        "catalog.parquet": 43472,
+        "product_commerce.parquet": 43472,
+        "product_edges.parquet": 81449,
+        "related_queries.parquet": 10327,
+        "query_doc_stats.parquet": 29329,
+        "query_popularity.parquet": 1540,
+        "replay_sample.parquet": 50000,
+        "category_complements.parquet": 284,
+        "product_meta.parquet": 36856
+      },
+      "bytes": 21362218,
+      "seconds": 8.03,
+      "rows_per_sec": 40802,
+      "finished_at": "2026-10-01T08:39:44"
+    },
+    "acquire": {
+      "stage": "acquire",
+      "files": {
+        "examples": {
+          "path": "data/raw/esci/shopping_queries_dataset_examples.parquet",
+          "bytes": 51286808,
+          "sha256": "4a735b693b4a424a6fc67f5be6e4c811495c488bbf66d02a602d308b2744263a",
+          "verified": true
+        },
+        "products": {
+          "path": "data/raw/esci/shopping_queries_dataset_products.parquet",
+          "bytes": 1108857465,
+          "sha256": "25124442d064d64b26f74082d6fa09438d679efc0c183cf28d19064a2b65a265",
+          "verified": true
+        },
+        "sources": {
+          "path": "data/raw/esci/shopping_queries_dataset_sources.csv",
+          "bytes": 1682802,
+          "sha256": "a5fed8ecc016443de40bf3c63098f0e3f23bbe4daa4236f1c38b8c3184778c50",
+          "verified": false
+        },
+        "esci_s_sample": {
+          "path": "data/raw/esci_s/sample.json.gz",
+          "bytes": 10569620
+        },
+        "esci_s_full_present": false
+      },
+      "bytes": 1172396695,
+      "seconds": 20.06,
+      "finished_at": "2026-10-01T06:52:16"
+    },
+    "esci_s_parse": {
+      "stage": "esci_s_parse",
+      "rows": 1480714,
+      "non_product_rows": 181194,
+      "seconds": 179.35,
+      "rows_per_sec": 8256,
+      "finished_at": "2026-10-01T07:12:20"
+    },
+    "index_demo_portable": {
+      "stage": "index_demo_portable",
+      "rows": 43304,
+      "corpus": "demo_portable",
+      "seconds": 6.22,
+      "rows_per_sec": 6962,
+      "finished_at": "2026-10-01T07:25:13"
+    },
+    "eval_demo_portable_test": {
+      "stage": "eval_demo_portable_test",
+      "rows": 1537,
+      "corpus": "demo_portable",
+      "split": "test",
+      "seconds": 2.26,
+      "rows_per_sec": 680,
+      "finished_at": "2026-10-01T07:25:18"
     }
   },
   "validation": {
@@ -1837,7 +1911,7 @@
         "check": "catalog.category_coverage",
         "passed": true,
         "detail": {
-          "known_category_share": 0.7089
+          "known_category_share": 0.9121
         }
       },
       {
@@ -1897,7 +1971,7 @@
         "passed": true,
         "detail": {
           "min_rate": 0.0578,
-          "max_rate": 0.2691
+          "max_rate": 0.2733
         }
       },
       {
@@ -1956,10 +2030,10 @@
         "check": "logs.ctr_monotone_in_label",
         "passed": true,
         "detail": {
-          "C": 0.0084,
-          "E": 0.0797,
-          "I": 0.0024,
-          "S": 0.0265
+          "C": 0.0089,
+          "E": 0.0794,
+          "I": 0.0025,
+          "S": 0.0275
         }
       },
       {

@@ -267,28 +267,44 @@ def build_traffic(cfg: Config, shards: int | None = None, n_sessions: int | None
     return info
 
 
-def _aggregate(cfg: Config) -> None:
+def _aggregate(cfg: Config, partitions: int | None = None) -> None:
+    """Per (query, product) feedback aggregates over all impressions.
+
+    Runs as `partitions` passes over hash partitions of query_id: each (query, product) group lives in exactly
+    one partition, so results are identical to a single GROUP BY while memory (and DuckDB spill) stays bounded
+    by 1/partitions of the hash table — 634M impressions aggregate in constant memory.
+    """
     con = duck(cfg)
     root = cfg.path("synthetic", "logs")
-    con.execute(f"""
-        COPY (
-          SELECT query_id, doc_id,
-                 count(*)::INTEGER AS impressions,
-                 sum(clicked::INT)::INTEGER AS clicks,
-                 sum(carted::INT)::INTEGER AS carts,
-                 sum(purchased::INT)::INTEGER AS purchases,
-                 sum(CASE WHEN clicked THEN 1.0 / exam_propensity ELSE 0 END) AS ips_clicks,
-                 sum(1.0 / exam_propensity) AS ips_impressions,
-                 sum(explore::INT)::INTEGER AS explore_impressions,
-                 sum((explore AND clicked)::INT)::INTEGER AS explore_clicks,
-                 avg(position) AS avg_position,
-                 sum(CASE WHEN feedback = 1 THEN 1 ELSE 0 END)::INTEGER AS thumbs_up,
-                 sum(CASE WHEN feedback = -1 THEN 1 ELSE 0 END)::INTEGER AS thumbs_down,
-                 avg(dwell_s) AS avg_dwell_s
-          FROM read_parquet('{root}/impressions/**/*.parquet', hive_partitioning=true)
-          GROUP BY ALL
-        ) TO '{root / "query_doc_stats.parquet"}' (FORMAT PARQUET, COMPRESSION ZSTD)
-    """)
+    k = int(partitions or cfg.get("simulation.traffic.aggregate_partitions", 8))
+    tmp = root / "_qds_parts"
+    shutil.rmtree(tmp, ignore_errors=True)
+    tmp.mkdir(parents=True)
+    for i in range(k):
+        con.execute(f"""
+            COPY (
+              SELECT query_id, doc_id,
+                     count(*)::INTEGER AS impressions,
+                     sum(clicked::INT)::INTEGER AS clicks,
+                     sum(carted::INT)::INTEGER AS carts,
+                     sum(purchased::INT)::INTEGER AS purchases,
+                     sum(CASE WHEN clicked THEN 1.0 / exam_propensity ELSE 0 END) AS ips_clicks,
+                     sum(1.0 / exam_propensity) AS ips_impressions,
+                     sum(explore::INT)::INTEGER AS explore_impressions,
+                     sum((explore AND clicked)::INT)::INTEGER AS explore_clicks,
+                     avg(position) AS avg_position,
+                     sum(CASE WHEN feedback = 1 THEN 1 ELSE 0 END)::INTEGER AS thumbs_up,
+                     sum(CASE WHEN feedback = -1 THEN 1 ELSE 0 END)::INTEGER AS thumbs_down,
+                     avg(dwell_s) AS avg_dwell_s
+              FROM read_parquet('{root}/impressions/**/*.parquet', hive_partitioning=true)
+              WHERE query_id % {k} = {i}
+              GROUP BY ALL
+            ) TO '{tmp / f"part-{i:03d}.parquet"}' (FORMAT PARQUET, COMPRESSION ZSTD)
+        """)
+        log.info("query_doc_stats partition %d/%d", i + 1, k)
+    con.execute(f"COPY (SELECT * FROM read_parquet('{tmp}/*.parquet')) TO '{root / 'query_doc_stats.parquet'}' "
+                "(FORMAT PARQUET, COMPRESSION ZSTD)")
+    shutil.rmtree(tmp, ignore_errors=True)
 
 
 # --------------------------------------------------------------------------------------

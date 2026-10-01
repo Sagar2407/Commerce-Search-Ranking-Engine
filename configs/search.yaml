@@ -37,7 +37,8 @@ search:
       batch_size: 256
       lr: 0.08                 # Adagrad (sparse rows)
       temperature: 0.05
-      hard_negatives: 1        # judged Irrelevant / Complement products of the same query
+      hard_negatives: 2        # judged negatives of the same query per positive pair
+      negative_labels: [I, C, S]   # Substitutes are negatives for Exact positives (gain 0.1 vs 1.0)
       typo_augment: 0.15       # share of training queries given one random character edit
       workers: 4               # Hogwild processes sharing the embedding table
       init_scale: 0.1

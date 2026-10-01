@@ -313,21 +313,24 @@ def train_encoder(
                     pass
             r = np.random.default_rng(wseed)
             tr = _Trainer(E_sh, float(T["lr"]), float(T["temperature"]), G_sh)
+            n_hard = max(1, int(T.get("hard_negatives", 1)))
             losses = []
             for loc, b in batches:
                 qi, di = pos_q[b], pos_d[b]
-                nn = neg_ptr[qi + 1] - neg_ptr[qi]
-                pick = neg_ptr[qi] + (r.random(len(qi)) * np.maximum(nn, 1)).astype(np.int64)
-                pool = docs_by_loc[loc]
-                rand = pool[r.integers(len(pool), size=len(qi))]
-                neg = np.where(nn > 0, neg_d[np.minimum(pick, len(neg_d) - 1)], rand) if len(neg_d) else rand
                 use_aug = r.random(len(qi)) < 0.5
+                order = np.concatenate([np.flatnonzero(~use_aug), np.flatnonzero(use_aug)])
                 Xb = (sp.vstack([Uq[qi[~use_aug]], Uqa[qi[use_aug]]]).tocsr() @ UF).tocsr()
-                qi = np.concatenate([qi[~use_aug], qi[use_aug]])
-                di = np.concatenate([di[~use_aug], di[use_aug]])
-                neg = np.concatenate([neg[~use_aug], neg[use_aug]])
-                docs = np.concatenate([di, neg])
-                mask = (docs[None, :] == di[:, None]) | (np.concatenate([qi, np.full(len(neg), -1)])[None, :] == qi[:, None])
+                qi, di = qi[order], di[order]
+                nn = neg_ptr[qi + 1] - neg_ptr[qi]
+                pool = docs_by_loc[loc]
+                negs = []
+                for _ in range(n_hard):   # judged negatives of the same query (random product if none)
+                    pick = neg_ptr[qi] + (r.random(len(qi)) * np.maximum(nn, 1)).astype(np.int64)
+                    rand = pool[r.integers(len(pool), size=len(qi))]
+                    negs.append(np.where(nn > 0, neg_d[np.minimum(pick, len(neg_d) - 1)], rand) if len(neg_d) else rand)
+                docs = np.concatenate([di, *negs])
+                owner = np.concatenate([qi, np.full(len(docs) - len(qi), -1)])
+                mask = (docs[None, :] == di[:, None]) | (owner[None, :] == qi[:, None])
                 mask[np.arange(len(qi)), np.arange(len(qi))] = False
                 losses.append(tr.step(Xb, (Ud[docs] @ UF).tocsr(), mask))
             if out_q is not None:

@@ -44,7 +44,8 @@ def train_dense(cfg: Config, corpus: str = "full") -> str:
     with stage_timer(cfg, "train_dense") as info:
         q = _queries(ds, "train").select("query_id", "query", "locale").sort("query_id").with_row_index("qi")
         j = ds.judgments(["query_id", "doc_id", "locale", "esci_label", "split"]).filter(pl.col("split") == "train")
-        j = j.filter(pl.col("esci_label").is_in(["E", "I", "C"]))
+        neg_labels = list(P["train"].get("negative_labels", ["I", "C"]))
+        j = j.filter(pl.col("esci_label").is_in(["E", *neg_labels]))
         docs = j.select("doc_id", "locale").unique().sort("doc_id")
         texts = []
         for loc in sorted(docs["locale"].unique().to_list()):

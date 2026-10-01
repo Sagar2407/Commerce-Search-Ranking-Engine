@@ -75,6 +75,7 @@ simulation:
     zipf_s: 0.8
     page_size: 20
     max_reformulations: 2
+    aggregate_partitions: 8    # query-hash passes for the (query, product) aggregation (bounded memory)
     logging_policy:
       name: prod_bm25_v0_sim
       grade_weight: 0.7

@@ -1,143 +1,145 @@
 {
-  "n_seed_labels": 4109,
-  "n_weak_labels": 57973,
-  "propagation": true,
-  "cv_folds": 5,
-  "accuracy": 0.7686,
-  "macro_f1": 0.67,
+  "esci_s_pages": 1481020,
+  "esci_s_real_departments": 1416574,
+  "n_seed_labels": 150008,
+  "n_weak_labels": 0,
+  "propagation": false,
+  "cv_folds": 3,
+  "accuracy": 0.8639,
+  "macro_f1": 0.8299,
   "threshold": 0.5,
-  "accuracy_at_threshold": 0.9022,
-  "coverage_at_threshold": 0.7041,
+  "accuracy_at_threshold": 0.945,
+  "coverage_at_threshold": 0.7566,
   "by_locale": {
     "us": {
-      "n": 2762,
-      "accuracy": 0.7867,
-      "accuracy_at_tau": 0.8961,
-      "coverage_at_tau": 0.7455
+      "n": 102942,
+      "accuracy": 0.8743,
+      "accuracy_at_tau": 0.9421,
+      "coverage_at_tau": 0.8101
     },
     "es": {
-      "n": 612,
-      "accuracy": 0.7173,
-      "accuracy_at_tau": 0.9008,
-      "coverage_at_tau": 0.5931
+      "n": 22446,
+      "accuracy": 0.8487,
+      "accuracy_at_tau": 0.9485,
+      "coverage_at_tau": 0.68
     },
     "jp": {
-      "n": 735,
-      "accuracy": 0.7429,
-      "accuracy_at_tau": 0.9299,
-      "coverage_at_tau": 0.6408
+      "n": 24620,
+      "accuracy": 0.8341,
+      "accuracy_at_tau": 0.958,
+      "coverage_at_tau": 0.603
     }
   },
   "coverage_accuracy_curve": [
     {
       "threshold": 0.0,
       "coverage": 1.0,
-      "accuracy": 0.7686
+      "accuracy": 0.8639
     },
     {
       "threshold": 0.3,
-      "coverage": 0.8966,
-      "accuracy": 0.8225
+      "coverage": 0.9308,
+      "accuracy": 0.8943
     },
     {
       "threshold": 0.4,
-      "coverage": 0.8085,
-      "accuracy": 0.8582
+      "coverage": 0.854,
+      "accuracy": 0.919
     },
     {
       "threshold": 0.45,
-      "coverage": 0.7564,
-      "accuracy": 0.8819
+      "coverage": 0.808,
+      "accuracy": 0.9319
     },
     {
       "threshold": 0.5,
-      "coverage": 0.7041,
-      "accuracy": 0.9022
+      "coverage": 0.7566,
+      "accuracy": 0.945
     },
     {
       "threshold": 0.6,
-      "coverage": 0.5958,
-      "accuracy": 0.9326
+      "coverage": 0.6442,
+      "accuracy": 0.9654
     },
     {
       "threshold": 0.7,
-      "coverage": 0.4785,
-      "accuracy": 0.9552
+      "coverage": 0.5083,
+      "accuracy": 0.9791
     },
     {
       "threshold": 0.8,
-      "coverage": 0.3212,
-      "accuracy": 0.9712
+      "coverage": 0.3242,
+      "accuracy": 0.9876
     }
   ],
   "label_distribution": [
     {
       "department": "Clothing, Shoes & Jewelry",
-      "count": 859
+      "count": 33639
     },
     {
       "department": "Home & Kitchen",
-      "count": 611
+      "count": 23043
     },
     {
       "department": "Electronics & Computers",
-      "count": 396
-    },
-    {
-      "department": "Books & Media",
-      "count": 356
+      "count": 16097
     },
     {
       "department": "Tools, Home Improvement & Garden",
-      "count": 314
+      "count": 12667
     },
     {
       "department": "Sports & Outdoors",
-      "count": 245
+      "count": 9189
     },
     {
       "department": "Toys, Games & Hobbies",
-      "count": 220
-    },
-    {
-      "department": "Health & Household",
-      "count": 219
+      "count": 8645
     },
     {
       "department": "Beauty & Personal Care",
-      "count": 218
+      "count": 8383
+    },
+    {
+      "department": "Health & Household",
+      "count": 8368
     },
     {
       "department": "Automotive",
-      "count": 145
-    },
-    {
-      "department": "Office Products",
-      "count": 122
+      "count": 5696
     },
     {
       "department": "Grocery & Gourmet Food",
-      "count": 116
+      "count": 5213
+    },
+    {
+      "department": "Office Products",
+      "count": 4565
     },
     {
       "department": "Pet Supplies",
-      "count": 83
+      "count": 3157
     },
     {
       "department": "Arts, Crafts & Sewing",
-      "count": 74
+      "count": 3121
     },
     {
-      "department": "Industrial & Scientific",
-      "count": 59
+      "department": "Books & Media",
+      "count": 2679
     },
     {
       "department": "Baby Products",
-      "count": 45
+      "count": 2274
+    },
+    {
+      "department": "Industrial & Scientific",
+      "count": 2035
     },
     {
       "department": "Musical Instruments",
-      "count": 27
+      "count": 1237
     }
   ]
 }
