@@ -39,6 +39,7 @@ search:
       temperature: 0.05
       hard_negatives: 1        # judged Irrelevant / Complement products of the same query
       typo_augment: 0.15       # share of training queries given one random character edit
+      workers: 4               # Hogwild processes sharing the embedding table
       init_scale: 0.1
     ann:
       kind: hnsw               # hnsw | exact

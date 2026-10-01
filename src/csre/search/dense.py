@@ -214,9 +214,10 @@ def build_feature_vocab(unit_vocab: list[str], unit_freq: np.ndarray, char_ngram
 
 
 class _Trainer:
-    def __init__(self, E: np.ndarray, lr: float, temperature: float):
+    def __init__(self, E: np.ndarray, lr: float, temperature: float, G: np.ndarray | None = None):
         self.E = E
-        self.G = np.full(E.shape[0], 1e-3, np.float32)   # row-wise Adagrad accumulator (memory-light)
+        # row-wise Adagrad accumulator (memory-light); shared between Hogwild workers when given
+        self.G = G if G is not None else np.full(E.shape[0], 1e-3, np.float32)
         self.lr = lr
         self.tau = temperature
 
@@ -285,42 +286,89 @@ def train_encoder(
              time.time() - t0)
     del du_all
 
-    trainer = _Trainer(E, float(T["lr"]), float(T["temperature"]))
     B = int(T["batch_size"])
     by_loc = {loc: np.flatnonzero(q_locale[pos_q] == loc) for loc in np.unique(q_locale)}
     docs_by_loc = {loc: np.flatnonzero(d_locale == loc) for loc in np.unique(d_locale)}
-    history = []
-    for ep in range(int(T["epochs"])):
-        batches = []
-        for loc, idx in by_loc.items():
-            idx = rng.permutation(idx)
-            batches += [(loc, idx[i:i + B]) for i in range(0, len(idx) - B + 1, B)]
-        order = rng.permutation(len(batches))
-        losses = []
-        te = time.time()
-        for bi in order:
-            loc, b = batches[bi]
-            qi, di = pos_q[b], pos_d[b]
-            nn = neg_ptr[qi + 1] - neg_ptr[qi]
-            pick = neg_ptr[qi] + (rng.random(len(qi)) * np.maximum(nn, 1)).astype(np.int64)
-            pool = docs_by_loc[loc]
-            rand = pool[rng.integers(len(pool), size=len(qi))]
-            neg = np.where(nn > 0, neg_d[np.minimum(pick, len(neg_d) - 1)], rand) if len(neg_d) else rand
-            use_aug = rng.random(len(qi)) < 0.5
-            Xb = (sp.vstack([Uq[qi[~use_aug]], Uqa[qi[use_aug]]]).tocsr() @ UF).tocsr()
-            qi = np.concatenate([qi[~use_aug], qi[use_aug]])
-            di = np.concatenate([di[~use_aug], di[use_aug]])
-            neg = np.concatenate([neg[~use_aug], neg[use_aug]])
-            docs = np.concatenate([di, neg])
-            mask = (docs[None, :] == di[:, None]) | (np.concatenate([qi, np.full(len(neg), -1)])[None, :] == qi[:, None])
-            mask[np.arange(len(qi)), np.arange(len(qi))] = False
-            losses.append(trainer.step(Xb, (Ud[docs] @ UF).tocsr(), mask))
-        rec = {"epoch": ep + 1, "loss": round(float(np.mean(losses)), 4), "steps": len(losses),
-               "seconds": round(time.time() - te, 1)}
-        if dev_fn is not None:
-            rec.update(dev_fn(enc))
-        history.append(rec)
-        log.info("encoder epoch %s", rec)
+    n_workers = max(1, int(T.get("workers", 1)))
+
+    # Hogwild: workers update one shared embedding table without locks (sparse rows rarely collide),
+    # as in word2vec / fastText / StarSpace training. Workers are forked and only use numpy / scipy.
+    from multiprocessing import shared_memory  # noqa: PLC0415
+    shm_e = shared_memory.SharedMemory(create=True, size=E.nbytes)
+    shm_g = shared_memory.SharedMemory(create=True, size=E.shape[0] * 4)
+    try:
+        E_sh = np.ndarray(E.shape, np.float32, buffer=shm_e.buf)
+        E_sh[:] = E
+        G_sh = np.ndarray((E.shape[0],), np.float32, buffer=shm_g.buf)
+        G_sh[:] = 1e-3
+        enc.E = E_sh
+        del E
+
+        def run_batches(batches, wseed, out_q=None):
+            if out_q is not None:
+                try:
+                    from threadpoolctl import threadpool_limits  # noqa: PLC0415
+                    threadpool_limits(1)
+                except Exception:  # noqa: BLE001
+                    pass
+            r = np.random.default_rng(wseed)
+            tr = _Trainer(E_sh, float(T["lr"]), float(T["temperature"]), G_sh)
+            losses = []
+            for loc, b in batches:
+                qi, di = pos_q[b], pos_d[b]
+                nn = neg_ptr[qi + 1] - neg_ptr[qi]
+                pick = neg_ptr[qi] + (r.random(len(qi)) * np.maximum(nn, 1)).astype(np.int64)
+                pool = docs_by_loc[loc]
+                rand = pool[r.integers(len(pool), size=len(qi))]
+                neg = np.where(nn > 0, neg_d[np.minimum(pick, len(neg_d) - 1)], rand) if len(neg_d) else rand
+                use_aug = r.random(len(qi)) < 0.5
+                Xb = (sp.vstack([Uq[qi[~use_aug]], Uqa[qi[use_aug]]]).tocsr() @ UF).tocsr()
+                qi = np.concatenate([qi[~use_aug], qi[use_aug]])
+                di = np.concatenate([di[~use_aug], di[use_aug]])
+                neg = np.concatenate([neg[~use_aug], neg[use_aug]])
+                docs = np.concatenate([di, neg])
+                mask = (docs[None, :] == di[:, None]) | (np.concatenate([qi, np.full(len(neg), -1)])[None, :] == qi[:, None])
+                mask[np.arange(len(qi)), np.arange(len(qi))] = False
+                losses.append(tr.step(Xb, (Ud[docs] @ UF).tocsr(), mask))
+            if out_q is not None:
+                out_q.put(losses)
+            return losses
+
+        history = []
+        for ep in range(int(T["epochs"])):
+            batches = []
+            for loc, idx in by_loc.items():
+                idx = rng.permutation(idx)
+                batches += [(loc, idx[i:i + B]) for i in range(0, len(idx) - B + 1, B)]
+            batches = [batches[i] for i in rng.permutation(len(batches))]
+            te = time.time()
+            if n_workers == 1 or len(batches) < 4 * n_workers:
+                losses = run_batches(batches, int(rng.integers(1 << 31)))
+            else:
+                import multiprocessing as mp  # noqa: PLC0415
+                ctx = mp.get_context("fork")
+                q_out = ctx.Queue()
+                procs = [ctx.Process(target=run_batches, args=(batches[w::n_workers], int(rng.integers(1 << 31)), q_out))
+                         for w in range(n_workers)]
+                for pr in procs:
+                    pr.start()
+                losses = [x for _ in procs for x in q_out.get()]
+                for pr in procs:
+                    pr.join()
+                    if pr.exitcode != 0:
+                        raise RuntimeError(f"encoder worker failed with exit code {pr.exitcode}")
+            rec = {"epoch": ep + 1, "loss": round(float(np.mean(losses)), 4), "steps": len(losses),
+                   "seconds": round(time.time() - te, 1), "workers": n_workers}
+            if dev_fn is not None:
+                rec.update(dev_fn(enc))
+            history.append(rec)
+            log.info("encoder epoch %s", rec)
+        enc.E = np.array(E_sh)            # copy out of shared memory
+    finally:
+        shm_e.close()
+        shm_e.unlink()
+        shm_g.close()
+        shm_g.unlink()
     return enc, history
 
 
