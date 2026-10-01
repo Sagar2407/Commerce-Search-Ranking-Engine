@@ -202,6 +202,7 @@ def evaluate(cfg: Config, corpus: str | None = None, split: str | None = None, m
                     "index": {loc: {kk: v for kk, v in b.items() if kk != "locale"}
                               for loc, b in eng.index_manifest().get("locales", {}).items()}}
     items = list(zip(q["query_id"].to_list(), q["query"].to_list(), q["locale"].to_list()))
+    eng.parser.prime(q["query"].to_list(), q["locale"].to_list())   # Polars is not fork-safe: parse up front
 
     with stage_timer(cfg, f"eval_{eng.ds.name}_{split}") as info:
         if "rerank" in parts:
@@ -306,6 +307,7 @@ def robustness(cfg: Config, eng: Engine, q: pl.DataFrame, seed: int, n_jobs: int
     if v.height == 0:
         return None
     v = v.sample(n=min(n, v.height), seed=seed, shuffle=True)
+    eng.parser.prime(v["query"].to_list(), v["locale"].to_list())
     items = list(zip(v["request_id"].to_list(), v["query_id"].to_list(), v["query"].to_list(), v["orig"].to_list(),
                      v["locale"].to_list(), v["variant"].to_list()))
     return pl.DataFrame(_parallel(_robust_batch, items, n_jobs, chunk=20))

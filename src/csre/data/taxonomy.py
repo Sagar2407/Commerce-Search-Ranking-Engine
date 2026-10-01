@@ -129,6 +129,10 @@ def _parse_count(s: str | None) -> float | None:
     return float(re.sub(r"[.,]", "", m.group(0))) if m else None
 
 
+def _positive(x: float | None) -> float | None:
+    return x if x is not None and x > 0 else None
+
+
 def _meta_row(r: dict) -> dict:
     loc = r.get("locale")
     cats = [c for c in (r.get("category") or []) if c]
@@ -138,7 +142,7 @@ def _meta_row(r: dict) -> dict:
         "category_path": " > ".join(cats) if cats else None,
         "category_top_raw": top,
         "department": RAW_TO_DEPT.get(top, "Other" if top else None),
-        "price": _parse_number(r.get("price"), loc),
+        "price": _positive(_parse_number(r.get("price"), loc)),   # "$0.00" pages are placeholders, not prices
         "currency": _CURRENCY.get(loc),
         "stars": _parse_stars(r.get("stars")),
         "n_ratings": _parse_count(r.get("ratings")),

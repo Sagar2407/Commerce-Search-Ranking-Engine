@@ -255,18 +255,29 @@ class Engine:
         return out
 
     # ---------------------------------------------------------------- query context
-    def context(self, query: str, locale: str, timings: dict | None = None) -> QueryContext:
+    def context(self, query: str, locale: str, timings: dict | None = None, full: bool = True) -> QueryContext:
+        """Query embedding, plus (full=True) parsed attributes and department distribution for the rerankers."""
         t = time.perf_counter()
-        parsed = self.parser.parse(query, locale)
-        t1 = time.perf_counter()
         qvec = self.encoder.encode_query(query) if self.encoder is not None else None
+        t1 = time.perf_counter()
+        parsed = self.parser.parse(query, locale) if full else None
+        cp = self.qcat.predict_proba([query])[0] if (full and self.qcat is not None) else None
         t2 = time.perf_counter()
-        cp = self.qcat.predict_proba([query])[0] if self.qcat is not None else None
-        t3 = time.perf_counter()
         if timings is not None:
-            timings["parse"] = (t1 - t) * 1e3 + (t3 - t2) * 1e3
-            timings["encode"] = (t2 - t1) * 1e3
+            timings["encode"] = (t1 - t) * 1e3
+            if full:
+                timings["parse"] = (t2 - t1) * 1e3
         return QueryContext(parsed, qvec, cp)
+
+    def complete(self, ctx: QueryContext, query: str, locale: str, timings: dict | None = None) -> QueryContext:
+        """Add query understanding to a light context (explanations, reranking)."""
+        if ctx.parsed is None:
+            t = time.perf_counter()
+            ctx.parsed = self.parser.parse(query, locale)
+            ctx.cat_proba = self.qcat.predict_proba([query])[0] if self.qcat is not None else None
+            if timings is not None:
+                timings["parse"] = (time.perf_counter() - t) * 1e3
+        return ctx
 
     # ---------------------------------------------------------------- retrieval
     def search(self, query: str, locale: str, method: str = "ltr", k: int = 10, budget_ms: float | None = None,
@@ -297,18 +308,20 @@ class Engine:
 
         ctx = None
         if served != "bm25":
-            ctx = self.context(query, locale, T)
+            ctx = self.context(query, locale, T, full=served in ("ltr", "ltr_fb"))
             if ctx.qvec is None or not np.any(ctx.qvec):
                 reason, served = "query has no known features for the dense encoder", "bm25"
 
-        # ---- bm25
-        t = time.perf_counter()
-        b_rows, b_sc = ix.bm25_text.search(query, n_cand if served != "bm25" else max(k, 1))
-        T["bm25"] = (time.perf_counter() - t) * 1e3
+        # ---- bm25 (not needed by the dense-only method)
+        b_rows, b_sc = np.zeros(0, np.int64), np.zeros(0, np.float32)
+        if served != "dense":
+            t = time.perf_counter()
+            b_rows, b_sc = ix.bm25_text.search(query, n_cand if served != "bm25" else max(k, 1))
+            T["bm25"] = (time.perf_counter() - t) * 1e3
         if served == "bm25":
             if rescue and len(b_rows) == 0 and self.encoder is not None and ix.vectors is not None:
                 # zero keyword matches (shopper vocabulary differs from the catalog): semantic rescue
-                ctx = ctx or self.context(query, locale, T)
+                ctx = ctx or self.context(query, locale, T, full=False)
                 if ctx.qvec is not None and np.any(ctx.qvec):
                     t = time.perf_counter()
                     d_rows, d_sc = ix.vectors.search(ctx.qvec, k, exact)
@@ -351,6 +364,7 @@ class Engine:
                                   len(cand), ctx)
 
         # ---- rerank
+        self.complete(ctx, query, locale, T)
         rr = cand[:depth]
         scores, X, names = self._ltr_scores(served, ctx, locale, rr, T)
         order = np.lexsort((rr, -scores))
@@ -389,7 +403,7 @@ class Engine:
         out: dict[str, np.ndarray] = {}
         need_ctx = any(m != "bm25" for m in methods)
         if need_ctx and ctx is None:
-            ctx = self.context(query, locale)
+            ctx = self.context(query, locale, full=any(m in ("ltr", "ltr_fb") for m in methods))
         bs = ix.bm25_text.score_docs(query, rows)
         out["bm25"] = bs
         if ctx is not None and ctx.qvec is not None and ix.vectors is not None:

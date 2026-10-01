@@ -38,8 +38,8 @@ def _queries(ds: Dataset, split: str) -> pl.DataFrame:
 # ======================================================================================
 # dense encoder
 # ======================================================================================
-def train_dense(cfg: Config) -> str:
-    ds = Dataset(cfg, "full")
+def train_dense(cfg: Config, corpus: str = "full") -> str:
+    ds = Dataset(cfg, corpus)
     P = cfg.get("search.dense")
     with stage_timer(cfg, "train_dense") as info:
         q = _queries(ds, "train").select("query_id", "query", "locale").sort("query_id").with_row_index("qi")
@@ -114,8 +114,8 @@ def _dense_dev_fn(cfg: Config, ds: Dataset, n: int = 3000):
 # ======================================================================================
 # query -> department
 # ======================================================================================
-def train_qcat(cfg: Config) -> str:
-    ds = Dataset(cfg, "full")
+def train_qcat(cfg: Config, corpus: str = "full") -> str:
+    ds = Dataset(cfg, corpus)
     with stage_timer(cfg, "train_qcat") as info:
         q = ds.queries()
         lab = q.filter(pl.col("e_top_category").is_not_null() & (pl.col("e_top_category") != "Unknown"))
@@ -171,6 +171,7 @@ def extract_features(eng, q: pl.DataFrame, split: str, n_jobs: int) -> tuple[np.
             _JUD[qid] = (gg["row"].to_numpy(), gg["grade"].to_numpy().astype(np.int32))
     items = [(a, b, c) for a, b, c in zip(q["query_id"].to_list(), q["query"].to_list(), q["locale"].to_list())
              if a in _JUD]
+    eng.parser.prime([b for _, b, _ in items], [c for _, _, c in items])   # no Polars in forked workers
     batches = [items[i:i + 200] for i in range(0, len(items), 200)]
     res = []
     with mp.get_context("fork").Pool(n_jobs) as pool:
@@ -202,13 +203,13 @@ def _dev_ndcg(scores: np.ndarray, y: np.ndarray, qids: np.ndarray, gains: list[f
     return float(np.mean(out))
 
 
-def train_ltr(cfg: Config, n_jobs: int | None = None) -> dict:
+def train_ltr(cfg: Config, n_jobs: int | None = None, corpus: str = "full") -> dict:
     import lightgbm as lgb  # noqa: PLC0415
     from .engine import Engine  # noqa: PLC0415
     L = cfg.get("search.ltr")
     n_jobs = n_jobs or mp.cpu_count()
     with stage_timer(cfg, "train_ltr") as info:
-        eng = Engine(cfg, "full", load_models=False)
+        eng = Engine(cfg, corpus, load_models=False)
         ds = eng.ds
         tr = _queries(ds, "train")
         if int(L["max_train_queries"]) and tr.height > int(L["max_train_queries"]):
@@ -271,10 +272,10 @@ def train_ltr(cfg: Config, n_jobs: int | None = None) -> dict:
 # ======================================================================================
 # hybrid fusion weight
 # ======================================================================================
-def tune_hybrid(cfg: Config, n_queries: int = 4000) -> str:
+def tune_hybrid(cfg: Config, n_queries: int = 4000, corpus: str = "full") -> str:
     from .engine import Engine, _z  # noqa: PLC0415
     with stage_timer(cfg, "tune_hybrid") as info:
-        eng = Engine(cfg, "full", load_models=False, feedback=False)
+        eng = Engine(cfg, corpus, load_models=False, feedback=False)
         dv = _queries(eng.ds, "dev").sample(n=min(n_queries, _queries(eng.ds, "dev").height), seed=cfg.seed)
         j = eng.ds.judgments(["query_id", "doc_id", "locale", "gain", "split"]).filter(pl.col("split") == "dev") \
                .join(dv.select("query_id"), on="query_id", how="semi")

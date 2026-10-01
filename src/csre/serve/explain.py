@@ -80,7 +80,7 @@ def shap_summary(contrib: np.ndarray, names: list[str], x: np.ndarray, top_n: in
 
 def explain_results(engine, resp, products: list[dict], top_n: int = 3) -> list[dict]:
     ix = engine.idx[resp.locale]
-    parsed = resp.context.parsed if resp.context else engine.parser.parse(resp.query, resp.locale)
+    parsed = resp.context.parsed if (resp.context and resp.context.parsed) else engine.parser.parse(resp.query, resp.locale)
     names = resp.feature_names
     contrib = None
     if resp.features is not None and resp.served_by in engine.models:

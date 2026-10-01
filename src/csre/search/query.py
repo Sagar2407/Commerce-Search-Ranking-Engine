@@ -9,7 +9,6 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass, field
-from functools import lru_cache
 from pathlib import Path
 
 import joblib
@@ -77,15 +76,35 @@ class BrandMatcher:
 
 
 class QueryParser:
-    def __init__(self, brand_patterns: dict[str, list[str]]):
+    """Bulk + cached query parsing.
+
+    Polars is not fork-safe: a forked worker that runs Polars expressions can deadlock on locks held by the
+    parent's thread pool. Parallel jobs therefore `prime()` the cache with every query in the parent before
+    forking, and workers only read it.
+    """
+
+    def __init__(self, brand_patterns: dict[str, list[str]], max_cache: int = 200_000):
         self.brands = BrandMatcher(brand_patterns)
-        self._parse_cached = lru_cache(maxsize=100_000)(self._parse)
+        self.cache: dict[tuple[str, str], ParsedQuery] = {}
+        self.max_cache = max_cache
 
     def parse(self, text: str, locale: str) -> ParsedQuery:
-        return self._parse_cached(text, locale)
+        hit = self.cache.get((text, locale))
+        if hit is not None:
+            return hit
+        p = self.parse_many([text], [locale])[0]
+        if len(self.cache) >= self.max_cache:
+            self.cache.pop(next(iter(self.cache)))
+        self.cache[(text, locale)] = p
+        return p
 
-    def _parse(self, text: str, locale: str) -> ParsedQuery:
-        return self.parse_many([text], [locale])[0]
+    def prime(self, texts: list[str], locales: list[str], batch: int = 50_000) -> None:
+        pairs = list(dict.fromkeys((t, l) for t, l in zip(texts, locales) if (t, l) not in self.cache))
+        self.max_cache = max(self.max_cache, len(self.cache) + len(pairs))
+        for i in range(0, len(pairs), batch):
+            chunk = pairs[i:i + batch]
+            for key, p in zip(chunk, self.parse_many([t for t, _ in chunk], [l for _, l in chunk])):
+                self.cache[key] = p
 
     def parse_many(self, texts: list[str], locales: list[str]) -> list[ParsedQuery]:
         df = pl.DataFrame({"q": texts, "locale": locales}).with_columns(

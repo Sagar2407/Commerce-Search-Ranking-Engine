@@ -25,19 +25,19 @@ OTHER = ["serve", "bench", "snapshot", "models", "promote"]
 def run_search_stage(stage: str, cfg, args) -> None:
     if stage == "train-dense":
         from .search.train import train_dense
-        train_dense(cfg)
+        train_dense(cfg, args.corpus or "full")
     elif stage == "index":
         from .search.engine import build_indexes
         build_indexes(cfg, args.corpus)
     elif stage == "train-qcat":
         from .search.train import train_qcat
-        train_qcat(cfg)
+        train_qcat(cfg, args.corpus or "full")
     elif stage == "tune-hybrid":
         from .search.train import tune_hybrid
-        tune_hybrid(cfg)
+        tune_hybrid(cfg, corpus=args.corpus or "full")
     elif stage == "train-ltr":
         from .search.train import train_ltr
-        train_ltr(cfg)
+        train_ltr(cfg, corpus=args.corpus or "full")
     elif stage == "eval":
         from .evaluation.harness import evaluate
         parts = tuple(args.parts.split(",")) if args.parts else ("rerank", "retrieval", "latency", "robustness")

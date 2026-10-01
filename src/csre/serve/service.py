@@ -146,8 +146,9 @@ class SearchService:
         resp = self.engine.search(query, locale, method, k=k, budget_ms=budget_ms, rescue=rescue)
         products = self.engine.result_rows(locale, resp.rows)
         t1 = time.perf_counter()
-        if resp.context is None:   # bm25 path skips query understanding; explanations / badges still need it
-            resp.context = self.engine.context(query, locale)
+        # cheaper paths skip query understanding; explanations, badges and the understanding panel need it
+        resp.context = self.engine.complete(resp.context or self.engine.context(query, locale, full=True),
+                                            query, locale)
         expl = explain_results(self.engine, resp, products, self.top_n) if explain and len(resp.rows) else None
         t_expl = (time.perf_counter() - t1) * 1e3
         qid = self.judged_query(query, locale)
