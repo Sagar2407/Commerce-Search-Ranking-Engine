@@ -168,3 +168,13 @@ def test_spell_corrector_expands_unseen_words_only():
 def test_query_key_is_order_insensitive():
     assert A.query_key("Shoes for Women size 8") == A.query_key("women shoes  size 8")
     assert A.query_key("water bottle") != A.query_key("bottle opener")
+
+
+def test_spell_corrector_rare_seller_misspellings():
+    from csre.search.spell import SpellCorrector
+    docs = ["wireless earbuds"] * 400 + ["wireles earbuds cheap"] * 4
+    idx = BM25Index.build(docs, n_jobs=1)
+    strict = SpellCorrector.from_bm25(idx, min_df=5, max_df=3, min_ratio=20)
+    assert strict.correct("wireles earbuds")[1] == []                       # seen in 4 products: left alone
+    lenient = SpellCorrector.from_bm25(idx, min_df=5, max_df=3, min_ratio=20, rare_df=50, strong_ratio=50)
+    assert lenient.correct("wireles earbuds")[1] == [("wireles", "wireless")]  # but 100x rarer than its neighbour

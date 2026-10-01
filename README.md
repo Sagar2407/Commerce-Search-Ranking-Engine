@@ -16,12 +16,12 @@ result or parse cache), top 10.
 
 | Approach | Rerank nDCG@10 | Δ vs BM25 | Retrieval nDCG@10 (condensed) | Δ vs BM25 | Recall@100 (Exact) | p50 / p95 ms | $ per 1M queries |
 |---|---|---|---|---|---|---|---|
-| Keyword (BM25) | 0.8422 | – | 0.6559 | – | 0.590 | 6.0 / 16.6 | $0.136 |
-| Semantic (dense) | 0.8354 | -0.0068 * | 0.5695 | -0.0865 * | 0.465 | 1.1 / 1.6 | $0.023 |
-| Hybrid (RRF) | 0.8460 | +0.0039 * | 0.6810 | +0.0251 * | 0.612 | 6.4 / 17.2 | $0.147 |
-| Hybrid (score fusion) | 0.8499 | +0.0078 * | 0.6843 | +0.0284 * | 0.618 | 8.3 / 21.7 | $0.191 |
-| **Reranker (LambdaMART)** | 0.8631 | +0.0209 * | 0.7013 | +0.0454 * | 0.623 | 11.3 / 25.6 | $0.258 |
-| Reranker + feedback ¹ | 0.9912 | +0.1490 * | 0.8046 | +0.1487 * | 0.669 | 14.8 / 30.2 | $0.339 |
+| Keyword (BM25) | 0.8424 | – | 0.6564 | – | 0.590 | 6.1 / 18.2 | $0.146 |
+| Semantic (dense) | 0.8355 | -0.0070 * | 0.5691 | -0.0873 * | 0.464 | 1.1 / 1.6 | $0.025 |
+| Hybrid (RRF) | 0.8462 | +0.0038 * | 0.6814 | +0.0250 * | 0.612 | 6.5 / 18.4 | $0.160 |
+| Hybrid (score fusion) | 0.8501 | +0.0076 * | 0.6847 | +0.0283 * | 0.619 | 8.6 / 23.2 | $0.207 |
+| **Reranker (LambdaMART)** | 0.8633 | +0.0208 * | 0.7017 | +0.0453 * | 0.623 | 11.6 / 28.1 | $0.275 |
+| Reranker + feedback ¹ | 0.9885 | +0.1461 * | 0.8037 | +0.1473 * | 0.668 | 15.5 / 33.1 | $0.357 |
 
 ¹ Uses clicks simulated from the same relevance labels: an upper bound on what feedback could add, not an estimate.
 
@@ -29,13 +29,13 @@ result or parse cache), top 10.
 
 | Slice | queries | BM25 | Dense | Hybrid | Reranker | Reranker gain |
 |---|---|---|---|---|---|---|
-| ambiguous | 8,270 | 0.8583 | 0.8505 | 0.8656 | 0.8750 | +0.0167 |
-| negation ("without …") | 2,143 | 0.6417 | 0.6472 | 0.6522 | 0.6816 | +0.0399 |
-| states a spec ("12 oz") | 1,831 | 0.8151 | 0.8014 | 0.8213 | 0.8540 | +0.0389 |
-| brand | 4,801 | 0.8534 | 0.8439 | 0.8607 | 0.8786 | +0.0251 |
-| thin product descriptions | 4,837 | 0.8223 | 0.8190 | 0.8327 | 0.8426 | +0.0203 |
-| hard (ESCI) | 14,496 | 0.7077 | 0.7050 | 0.7200 | 0.7387 | +0.0310 |
-| market es / jp / us | 3,844 / 4,667 / 22,458 | 0.785 / 0.800 / 0.861 | 0.790 / 0.784 / 0.854 | 0.798 / 0.806 / 0.868 | 0.816 / 0.819 / 0.880 | +0.031 / +0.018 / +0.020 |
+| ambiguous | 8,270 | 0.8586 | 0.8505 | 0.8657 | 0.8754 | +0.0169 |
+| negation ("without …") | 2,143 | 0.6418 | 0.6472 | 0.6522 | 0.6814 | +0.0397 |
+| states a spec ("12 oz") | 1,831 | 0.8151 | 0.8017 | 0.8213 | 0.8540 | +0.0389 |
+| brand | 4,801 | 0.8537 | 0.8441 | 0.8609 | 0.8785 | +0.0249 |
+| thin product descriptions | 4,837 | 0.8224 | 0.8189 | 0.8327 | 0.8429 | +0.0205 |
+| hard (ESCI) | 14,496 | 0.7081 | 0.7052 | 0.7202 | 0.7391 | +0.0309 |
+| market es / jp / us | 3,844 / 4,667 / 22,458 | 0.785 / 0.800 / 0.861 | 0.790 / 0.784 / 0.854 | 0.798 / 0.806 / 0.868 | 0.816 / 0.819 / 0.881 | +0.031 / +0.018 / +0.020 |
 
 Full tables: [`data/reports/eval_full_test.md`](data/reports/eval_full_test.md).
 
@@ -44,12 +44,12 @@ Full tables: [`data/reports/eval_full_test.md`](data/reports/eval_full_test.md).
 * **Keyword search is a strong baseline on this data.** ESCI queries were collected *because* they are hard, and
   candidate sets are lexically close to the query, so word overlap carries a lot of signal.
 * **Semantic retrieval alone is worse than keyword search, but it finds different products.** Fused with BM25 it
-  lifts recall of exact matches from 0.590 to 0.618 and retrieval nDCG by +0.028. In Spanish it beats BM25 on its
+  lifts recall of exact matches from 0.590 to 0.619 and retrieval nDCG by +0.028. In Spanish it beats BM25 on its
   own (0.790 vs 0.785), and on negation queries too.
 * **The reranker is where most of the gain is.** It adds +0.021 (rerank) and +0.045 (retrieval) over BM25, largest
   on queries with specs (+0.039), negation (+0.040) and hard queries (+0.031): attribute match / conflict
   features let it demote a "size 10" for a "size 8" query that shares every word. It costs about 2× BM25's
-  latency (p50 11.3 vs 6.0 ms) and compute (~$0.26 vs $0.14 per million queries); at retail scale that is
+  latency (p50 11.6 vs 6.1 ms) and compute (~$0.27 vs $0.15 per million queries); at retail scale that is
   negligible next to a +0.04 nDCG change. `csre bench` shows quality still rising when the reranker sees the
   whole keyword + semantic candidate union (100 → 200 products: +0.0075 nDCG@10 for ~0.5 ms), so it does.
 * **Scaling: keyword search, not semantic search, is what gets expensive.** Measured on shards of 0.5M / 1.0M /
@@ -57,11 +57,11 @@ Full tables: [`data/reports/eval_full_test.md`](data/reports/eval_full_test.md).
   stays at ~0.5 ms. A 25M-product catalog served as 17 parallel shards keeps p50 near 8 ms but needs ~51 GB of
   index memory and ~$3 of retrieval compute per million queries (`csre bench`, `data/reports/bench.json`).
 * **Typos are the biggest remaining failure.** One typo cost every method ~0.23 nDCG@10. Catalog-vocabulary
-  spelling correction halves that (−0.12 with correction) and also helps real typos in the test queries.
+  spelling correction halves that (−0.11 with correction) and also helps real typos in the test queries.
 * **Offline gains, translated into shopper terms (simulated).** Replaying 3,000 traffic-weighted test queries
   through the phase-1 click model (100 simulated shoppers per query, the same shoppers for every approach), the
-  reranker lifts purchases per search by +5.8% to +9.3% over BM25 across three assumptions about unjudged products
-  (95% CIs all above +4%). A real pilot would need roughly 36K–66K searches per arm to detect that
+  reranker lifts purchases per search by +5.2% to +8.3% over BM25 across three assumptions about unjudged products
+  (95% CIs all above +3.7%). A real pilot would need roughly 45K–80K searches per arm to detect that
   ([docs/pilot.md](docs/pilot.md)). These are simulated numbers built from the same labels: they size the pilot,
   they do not replace it.
 * **Feedback helps only queries seen before.** The feedback-aware ranker loses its advantage on query variants it
@@ -81,6 +81,10 @@ with "showing results for"; feedback buttons update the feedback-aware ranker li
 make serve       # http://localhost:8000, 151K-product demo catalog with product images
 make snapshot    # self-contained page with precomputed results (data/reports/storefront_snapshot.html)
 ```
+
+A snapshot of the storefront (24 precomputed queries across every slice, all six approaches, evaluation tab) is
+published at https://claude.ai/artifact/42ahQhgtC3oeudo7eNCvc5 and is in the repository as
+[`data/reports/storefront_snapshot.html`](data/reports/storefront_snapshot.html).
 
 ## Quickstart
 
@@ -123,7 +127,7 @@ pytest -q        # 35 tests, no data needed
   and stop after two trees), and everything is reported on the untouched `test` split.
 * **Unjudged is unknown.** Full-catalog metrics are condensed (unjudged results dropped), with a pessimistic bound
   and judged@10 alongside.
-* **Latency work was profiling-driven.** BM25 p95 fell from 253 to 17 ms by replacing a sort of ~1M postings with a
+* **Latency work was profiling-driven.** BM25 p95 fell from 253 to ~18 ms by replacing a sort of ~1M postings with a
   linear scan; query parsing fell from 6.5 to 0.3 ms by porting the phase-1 Polars extractors to plain `re`
   (parity-tested on 20,000 real queries, zero mismatches), which also removed the fork-safety hazard.
 * **Simulated is labelled simulated.** Prices and ratings are real (ESCI-S) where available; clicks, carts and

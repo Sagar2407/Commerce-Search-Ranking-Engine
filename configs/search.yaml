@@ -81,7 +81,7 @@ search:
     min_df: 5                  # a suggestion must appear in at least this many products
     max_df: 3                  # only words seen in fewer products than this are corrected
     min_ratio: 20              # ... and the suggestion must be this many times more frequent
-    rare_df: 0                 # also correct words in up to this many products (sellers misspell too) ...
+    rare_df: 50                # also correct words in up to this many products (sellers misspell too) ...
     strong_ratio: 200          # ... when a one-edit neighbour is this many times more frequent
 
   query_category:

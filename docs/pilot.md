@@ -44,11 +44,11 @@ shoppers for every approach), the content-only reranker lifts purchases per sear
 
 | Assumption for unjudged products | Lift | 95% CI | Searches per arm for the pilot |
 |---|---|---|---|
-| Irrelevant (pessimistic) | +9.3% | +6.9% to +11.7% | ~36,000 |
-| Complement (neutral) | +6.9% | +5.1% to +8.8% | ~53,000 |
-| Substitute (optimistic) | +5.8% | +4.3% to +7.4% | ~66,000 |
+| Irrelevant (pessimistic) | +8.3% | +5.8% to +10.7% | ~45,000 |
+| Complement (neutral) | +6.2% | +4.3% to +8.1% | ~66,000 |
+| Substitute (optimistic) | +5.2% | +3.7% to +6.9% | ~80,000 |
 
-Dense retrieval alone *loses* 19–39% in the same simulation (it surfaces more unjudged, often off-target products),
+Dense retrieval alone *loses* 20–39% in the same simulation (it surfaces more unjudged, often off-target products),
 which is why it is only used inside the hybrid and the reranker.
 
 ## Sample size

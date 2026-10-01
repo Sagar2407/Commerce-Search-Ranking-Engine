@@ -10,12 +10,12 @@ Every product a query was judged on is ranked; all results are labelled, so nDCG
 
 | Method | nDCG@10 | Δ vs BM25 | nDCG@5 | MRR (first Exact) | P@1 Exact |
 |---|---|---|---|---|---|
-| Keyword (BM25) | 0.8422 [0.8399, 0.8445] | – | 0.8250 | 0.8822 | 0.8176 |
-| Semantic (dense) | 0.8354 [0.8330, 0.8375] | -0.0068 [-0.0083, -0.0052] * | 0.8165 | 0.8747 | 0.8066 |
-| Hybrid (RRF) | 0.8460 [0.8439, 0.8482] | +0.0039 [+0.0029, +0.0048] * | 0.8300 | 0.8885 | 0.8265 |
-| Hybrid (score fusion) | 0.8499 [0.8476, 0.8521] | +0.0078 [+0.0069, +0.0086] * | 0.8349 | 0.8914 | 0.8309 |
-| Reranker (LambdaMART) | 0.8631 [0.8611, 0.8652] | +0.0209 [+0.0197, +0.0222] * | 0.8508 | 0.9053 | 0.8513 |
-| Reranker + feedback | 0.9912 [0.9907, 0.9917] | +0.1490 [+0.1469, +0.1513] * | 0.9909 | 0.9951 | 0.9920 |
+| Keyword (BM25) | 0.8424 [0.8400, 0.8447] | – | 0.8254 | 0.8826 | 0.8180 |
+| Semantic (dense) | 0.8355 [0.8332, 0.8377] | -0.0070 [-0.0084, -0.0054] * | 0.8168 | 0.8751 | 0.8074 |
+| Hybrid (RRF) | 0.8462 [0.8440, 0.8484] | +0.0038 [+0.0029, +0.0047] * | 0.8303 | 0.8888 | 0.8271 |
+| Hybrid (score fusion) | 0.8501 [0.8478, 0.8522] | +0.0076 [+0.0069, +0.0084] * | 0.8350 | 0.8916 | 0.8313 |
+| Reranker (LambdaMART) | 0.8633 [0.8612, 0.8654] | +0.0208 [+0.0196, +0.0222] * | 0.8510 | 0.9056 | 0.8516 |
+| Reranker + feedback | 0.9885 [0.9879, 0.9892] | +0.1461 [+0.1439, +0.1484] * | 0.9878 | 0.9932 | 0.9891 |
 
 ## Full-catalog retrieval
 
@@ -23,56 +23,56 @@ Every product a query was judged on is ranked; all results are labelled, so nDCG
 
 | Method | condensed nDCG@10 | Δ vs BM25 | nDCG@10 lower bound | judged@10 | Recall@100 (Exact) | Success@10 |
 |---|---|---|---|---|---|---|
-| Keyword (BM25) | 0.6559 [0.6492, 0.6623] | – | 0.3710 | 0.378 | 0.5901 | 0.744 |
-| Semantic (dense) | 0.5695 [0.5622, 0.5766] | -0.0865 [-0.0927, -0.0801] * | 0.2473 | 0.248 | 0.4646 | 0.621 |
-| Hybrid (RRF) | 0.6810 [0.6745, 0.6873] | +0.0251 [+0.0224, +0.0278] * | 0.3283 | 0.331 | 0.6119 | 0.736 |
-| Hybrid (score fusion) | 0.6843 [0.6779, 0.6907] | +0.0284 [+0.0262, +0.0308] * | 0.3830 | 0.387 | 0.6184 | 0.767 |
-| Reranker (LambdaMART) | 0.7013 [0.6951, 0.7076] | +0.0454 [+0.0423, +0.0484] * | 0.4025 | 0.390 | 0.6230 | 0.783 |
-| Reranker + feedback | 0.8046 [0.7984, 0.8104] | +0.1487 [+0.1448, +0.1525] * | 0.7936 | 0.761 | 0.6685 | 0.934 |
+| Keyword (BM25) | 0.6564 [0.6496, 0.6629] | – | 0.3713 | 0.378 | 0.5904 | 0.745 |
+| Semantic (dense) | 0.5691 [0.5620, 0.5766] | -0.0873 [-0.0935, -0.0810] * | 0.2470 | 0.248 | 0.4642 | 0.620 |
+| Hybrid (RRF) | 0.6814 [0.6749, 0.6873] | +0.0250 [+0.0221, +0.0278] * | 0.3277 | 0.331 | 0.6123 | 0.735 |
+| Hybrid (score fusion) | 0.6847 [0.6782, 0.6910] | +0.0283 [+0.0261, +0.0304] * | 0.3833 | 0.387 | 0.6187 | 0.768 |
+| Reranker (LambdaMART) | 0.7017 [0.6950, 0.7079] | +0.0453 [+0.0423, +0.0484] * | 0.4019 | 0.390 | 0.6233 | 0.783 |
+| Reranker + feedback | 0.8037 [0.7975, 0.8094] | +0.1473 [+0.1432, +0.1513] * | 0.7896 | 0.757 | 0.6680 | 0.931 |
 
 ### nDCG@10 by slice (rerank)
 
 | Slice | queries | Keyword (BM25) | Semantic (dense) | Hybrid (RRF) | Hybrid (score fusion) | Reranker (LambdaMART) | Reranker + feedback |
 |---|---|---|---|---|---|---|---|
-| locale=es | 3,844 | 0.7845 | 0.7895 | 0.7957 | 0.7975 | 0.8155 | **0.9871** |
-| locale=jp | 4,667 | 0.8003 | 0.7839 | 0.8000 | 0.8060 | 0.8187 | **0.9946** |
-| locale=us | 22,458 | 0.8607 | 0.8539 | 0.8642 | 0.8680 | 0.8804 | **0.9912** |
-| traffic_bucket=head | 195 | 0.8615 | 0.8431 | 0.8634 | 0.8620 | 0.8696 | **0.9973** |
-| traffic_bucket=tail | 24,949 | 0.8390 | 0.8325 | 0.8428 | 0.8467 | 0.8605 | **0.9905** |
-| traffic_bucket=torso | 5,825 | 0.8550 | 0.8474 | 0.8592 | 0.8634 | 0.8739 | **0.9941** |
-| length_bucket=long | 3,022 | 0.7963 | 0.7944 | 0.8037 | 0.8060 | 0.8239 | **0.9853** |
-| length_bucket=medium | 19,554 | 0.8376 | 0.8305 | 0.8412 | 0.8453 | 0.8591 | **0.9911** |
-| length_bucket=short | 8,393 | 0.8692 | 0.8613 | 0.8726 | 0.8764 | 0.8865 | **0.9936** |
-| ambiguous | 8,270 | 0.8583 | 0.8505 | 0.8615 | 0.8656 | 0.8750 | **0.9931** |
-| underspecified | 6,279 | 0.8674 | 0.8590 | 0.8703 | 0.8748 | 0.8830 | **0.9933** |
-| multi_intent | 2,812 | 0.8422 | 0.8339 | 0.8461 | 0.8486 | 0.8595 | **0.9925** |
-| negation | 2,143 | 0.6417 | 0.6472 | 0.6529 | 0.6522 | 0.6816 | **0.9871** |
-| spec | 1,831 | 0.8151 | 0.8014 | 0.8163 | 0.8213 | 0.8540 | **0.9889** |
-| brand | 4,801 | 0.8534 | 0.8439 | 0.8566 | 0.8607 | 0.8786 | **0.9921** |
-| sparse_products | 4,837 | 0.8223 | 0.8190 | 0.8282 | 0.8327 | 0.8426 | **0.9899** |
-| hard | 14,496 | 0.7077 | 0.7050 | 0.7160 | 0.7200 | 0.7387 | **0.9842** |
+| locale=es | 3,844 | 0.7846 | 0.7897 | 0.7960 | 0.7976 | 0.8157 | **0.9836** |
+| locale=jp | 4,667 | 0.8003 | 0.7838 | 0.8000 | 0.8060 | 0.8187 | **0.9946** |
+| locale=us | 22,458 | 0.8611 | 0.8540 | 0.8644 | 0.8682 | 0.8807 | **0.9881** |
+| traffic_bucket=head | 195 | 0.8615 | 0.8443 | 0.8640 | 0.8627 | 0.8709 | **0.9967** |
+| traffic_bucket=tail | 24,949 | 0.8393 | 0.8326 | 0.8431 | 0.8469 | 0.8607 | **0.9878** |
+| traffic_bucket=torso | 5,825 | 0.8551 | 0.8472 | 0.8591 | 0.8634 | 0.8741 | **0.9915** |
+| length_bucket=long | 3,022 | 0.7965 | 0.7945 | 0.8039 | 0.8062 | 0.8238 | **0.9827** |
+| length_bucket=medium | 19,554 | 0.8379 | 0.8307 | 0.8413 | 0.8455 | 0.8592 | **0.9884** |
+| length_bucket=short | 8,393 | 0.8695 | 0.8613 | 0.8728 | 0.8766 | 0.8870 | **0.9909** |
+| ambiguous | 8,270 | 0.8586 | 0.8505 | 0.8617 | 0.8657 | 0.8754 | **0.9906** |
+| underspecified | 6,279 | 0.8677 | 0.8589 | 0.8704 | 0.8750 | 0.8836 | **0.9906** |
+| multi_intent | 2,812 | 0.8426 | 0.8343 | 0.8467 | 0.8489 | 0.8599 | **0.9909** |
+| negation | 2,143 | 0.6418 | 0.6472 | 0.6528 | 0.6522 | 0.6814 | **0.9854** |
+| spec | 1,831 | 0.8151 | 0.8017 | 0.8164 | 0.8213 | 0.8540 | **0.9873** |
+| brand | 4,801 | 0.8537 | 0.8441 | 0.8569 | 0.8609 | 0.8785 | **0.9901** |
+| sparse_products | 4,837 | 0.8224 | 0.8189 | 0.8281 | 0.8327 | 0.8429 | **0.9855** |
+| hard | 14,496 | 0.7081 | 0.7052 | 0.7163 | 0.7202 | 0.7391 | **0.9793** |
 
 ### condensed nDCG@10 by slice (retrieval)
 
 | Slice | queries | Keyword (BM25) | Semantic (dense) | Hybrid (RRF) | Hybrid (score fusion) | Reranker (LambdaMART) | Reranker + feedback |
 |---|---|---|---|---|---|---|---|
-| locale=es | 3,000 | 0.6501 | 0.6037 | 0.6868 | 0.6838 | 0.7066 | **0.8221** |
+| locale=es | 3,000 | 0.6505 | 0.6028 | 0.6871 | 0.6843 | 0.7071 | **0.8204** |
 | locale=jp | 3,000 | 0.6582 | 0.5300 | 0.6707 | 0.6772 | 0.6923 | **0.8033** |
-| locale=us | 3,000 | 0.6595 | 0.5747 | 0.6855 | 0.6919 | 0.7051 | **0.7884** |
+| locale=us | 3,000 | 0.6605 | 0.5746 | 0.6863 | 0.6926 | 0.7058 | **0.7875** |
 | traffic_bucket=head | 63 | 0.5513 | 0.3389 | 0.5672 | 0.5739 | 0.5785 | **0.6879** |
-| traffic_bucket=tail | 6,943 | 0.6605 | 0.5872 | 0.6849 | 0.6881 | 0.7061 | **0.8126** |
-| traffic_bucket=torso | 1,994 | 0.6434 | 0.5151 | 0.6710 | 0.6745 | 0.6887 | **0.7806** |
-| length_bucket=long | 769 | 0.6487 | 0.6042 | 0.6689 | 0.6691 | 0.6895 | **0.8210** |
-| length_bucket=medium | 5,673 | 0.6679 | 0.6000 | 0.6914 | 0.6965 | 0.7127 | **0.8218** |
-| length_bucket=short | 2,558 | 0.6316 | 0.4913 | 0.6616 | 0.6618 | 0.6797 | **0.7615** |
-| ambiguous | 2,494 | 0.6273 | 0.4939 | 0.6543 | 0.6541 | 0.6687 | **0.7553** |
-| underspecified | 1,959 | 0.6197 | 0.4771 | 0.6480 | 0.6479 | 0.6615 | **0.7429** |
-| multi_intent | 784 | 0.6487 | 0.5210 | 0.6676 | 0.6710 | 0.6830 | **0.7876** |
-| negation | 940 | 0.5729 | 0.5342 | 0.5911 | 0.5938 | 0.6147 | **0.7995** |
-| spec | 441 | 0.6664 | 0.6357 | 0.6953 | 0.7009 | 0.7417 | **0.8481** |
-| brand | 1,175 | 0.7491 | 0.6558 | 0.7714 | 0.7750 | 0.7948 | **0.8988** |
-| sparse_products | 1,746 | 0.6510 | 0.5369 | 0.6760 | 0.6764 | 0.6920 | **0.7759** |
-| hard | 5,101 | 0.5632 | 0.4818 | 0.5841 | 0.5885 | 0.6073 | **0.7544** |
+| traffic_bucket=tail | 6,943 | 0.6609 | 0.5866 | 0.6853 | 0.6884 | 0.7063 | **0.8116** |
+| traffic_bucket=torso | 1,994 | 0.6441 | 0.5158 | 0.6715 | 0.6754 | 0.6899 | **0.7799** |
+| length_bucket=long | 769 | 0.6487 | 0.6042 | 0.6693 | 0.6691 | 0.6901 | **0.8205** |
+| length_bucket=medium | 5,673 | 0.6683 | 0.5995 | 0.6917 | 0.6969 | 0.7130 | **0.8209** |
+| length_bucket=short | 2,558 | 0.6322 | 0.4912 | 0.6621 | 0.6625 | 0.6802 | **0.7606** |
+| ambiguous | 2,494 | 0.6280 | 0.4938 | 0.6550 | 0.6550 | 0.6694 | **0.7545** |
+| underspecified | 1,959 | 0.6205 | 0.4772 | 0.6488 | 0.6488 | 0.6623 | **0.7421** |
+| multi_intent | 784 | 0.6491 | 0.5205 | 0.6680 | 0.6716 | 0.6833 | **0.7871** |
+| negation | 940 | 0.5730 | 0.5337 | 0.5914 | 0.5938 | 0.6149 | **0.7987** |
+| spec | 441 | 0.6672 | 0.6357 | 0.6963 | 0.7015 | 0.7425 | **0.8483** |
+| brand | 1,175 | 0.7490 | 0.6551 | 0.7714 | 0.7751 | 0.7946 | **0.8975** |
+| sparse_products | 1,746 | 0.6513 | 0.5357 | 0.6764 | 0.6767 | 0.6925 | **0.7745** |
+| hard | 5,101 | 0.5636 | 0.4814 | 0.5845 | 0.5889 | 0.6078 | **0.7531** |
 
 ## Latency and serving cost
 
@@ -80,12 +80,12 @@ Every product a query was judged on is ranked; all results are labelled, so nDCG
 
 | Method | p50 ms | p95 ms | p99 ms | QPS / core | $ / 1M queries | stage means (ms) |
 |---|---|---|---|---|---|---|
-| Keyword (BM25) | 6.0 | 16.6 | 21.3 | 152 | $0.136 | bm25 6.4 |
-| Semantic (dense) | 1.1 | 1.6 | 2.1 | 885 | $0.023 | encode 0.2, dense 0.7 |
-| Hybrid (RRF) | 6.4 | 17.2 | 21.7 | 141 | $0.147 | bm25 6.0, encode 0.2, dense 0.7, fuse 0.1 |
-| Hybrid (score fusion) | 8.3 | 21.7 | 27.7 | 108 | $0.191 | bm25 6.0, encode 0.2, dense 0.6, fuse 2.3 |
-| Reranker (LambdaMART) | 11.3 | 25.6 | 33.6 | 80 | $0.258 | bm25 5.8, encode 0.2, dense 0.6, fuse 2.2, parse 0.3, features 1.2, rerank 1.8 |
-| Reranker + feedback | 14.8 | 30.2 | 41.8 | 61 | $0.339 | bm25 6.1, encode 0.2, dense 0.7, fuse 2.3, parse 0.3, features 1.3, rerank 5.1 |
+| Keyword (BM25) | 6.1 | 18.2 | 24.5 | 142 | $0.146 | bm25 6.9, spell 0.0 |
+| Semantic (dense) | 1.1 | 1.6 | 2.1 | 836 | $0.025 | encode 0.3, dense 0.8, spell 0.0 |
+| Hybrid (RRF) | 6.5 | 18.4 | 26.3 | 129 | $0.160 | bm25 6.6, encode 0.2, dense 0.7, fuse 0.1, spell 0.0 |
+| Hybrid (score fusion) | 8.6 | 23.2 | 34.0 | 100 | $0.207 | bm25 6.4, encode 0.2, dense 0.7, fuse 2.6, spell 0.0 |
+| Reranker (LambdaMART) | 11.6 | 28.1 | 35.7 | 75 | $0.275 | bm25 6.2, encode 0.2, dense 0.7, fuse 2.4, parse 0.3, features 1.3, rerank 1.9, spell 0.0 |
+| Reranker + feedback | 15.5 | 33.1 | 41.1 | 58 | $0.357 | bm25 6.5, encode 0.2, dense 0.7, fuse 2.5, parse 0.3, features 1.4, rerank 5.2, spell 0.0 |
 
 ## Robustness to query variants (replay stream)
 
@@ -93,33 +93,33 @@ Every product a query was judged on is ranked; all results are labelled, so nDCG
 
 | Variant | Method | original nDCG@10 | variant nDCG@10 | Δ |
 |---|---|---|---|---|
-| case_space | Keyword (BM25) | 0.6694 | 0.6634 | -0.0060 |
-| case_space | Semantic (dense) | 0.5653 | 0.5642 | -0.0010 |
-| case_space | Hybrid (score fusion) | 0.6978 | 0.6918 | -0.0060 |
-| case_space | Hybrid (RRF) | 0.6899 | 0.6829 | -0.0070 |
-| case_space | Reranker (LambdaMART) | 0.7099 | 0.7032 | -0.0067 |
-| case_space | Reranker + feedback | 0.7954 | 0.7795 | -0.0159 |
-| modifier | Keyword (BM25) | 0.6714 | 0.6517 | -0.0197 |
-| modifier | Semantic (dense) | 0.5463 | 0.5040 | -0.0423 |
-| modifier | Hybrid (score fusion) | 0.6979 | 0.6808 | -0.0172 |
-| modifier | Hybrid (RRF) | 0.6916 | 0.6736 | -0.0179 |
-| modifier | Reranker (LambdaMART) | 0.7094 | 0.6640 | -0.0453 |
-| modifier | Reranker + feedback | 0.7937 | 0.6537 | -0.1401 |
-| reorder | Keyword (BM25) | 0.6650 | 0.6650 | +0.0000 |
-| reorder | Semantic (dense) | 0.5784 | 0.5784 | +0.0000 |
-| reorder | Hybrid (score fusion) | 0.6905 | 0.6905 | +0.0000 |
-| reorder | Hybrid (RRF) | 0.6851 | 0.6851 | +0.0000 |
+| case_space | Keyword (BM25) | 0.6702 | 0.6642 | -0.0060 |
+| case_space | Semantic (dense) | 0.5670 | 0.5660 | -0.0010 |
+| case_space | Hybrid (score fusion) | 0.6982 | 0.6922 | -0.0060 |
+| case_space | Hybrid (RRF) | 0.6908 | 0.6839 | -0.0070 |
+| case_space | Reranker (LambdaMART) | 0.7095 | 0.7028 | -0.0067 |
+| case_space | Reranker + feedback | 0.7931 | 0.7772 | -0.0159 |
+| modifier | Keyword (BM25) | 0.6719 | 0.6520 | -0.0199 |
+| modifier | Semantic (dense) | 0.5463 | 0.5044 | -0.0419 |
+| modifier | Hybrid (score fusion) | 0.6985 | 0.6816 | -0.0169 |
+| modifier | Hybrid (RRF) | 0.6923 | 0.6743 | -0.0179 |
+| modifier | Reranker (LambdaMART) | 0.7089 | 0.6652 | -0.0437 |
+| modifier | Reranker + feedback | 0.7903 | 0.6533 | -0.1370 |
+| reorder | Keyword (BM25) | 0.6663 | 0.6663 | +0.0000 |
+| reorder | Semantic (dense) | 0.5770 | 0.5770 | +0.0000 |
+| reorder | Hybrid (score fusion) | 0.6917 | 0.6917 | +0.0000 |
+| reorder | Hybrid (RRF) | 0.6876 | 0.6876 | +0.0000 |
 | reorder | Reranker (LambdaMART) | 0.6971 | 0.6961 | -0.0010 |
-| reorder | Reranker + feedback | 0.7942 | 0.7940 | -0.0002 |
-| token_drop | Keyword (BM25) | 0.6798 | 0.5381 | -0.1417 |
-| token_drop | Semantic (dense) | 0.5828 | 0.4081 | -0.1747 |
-| token_drop | Hybrid (score fusion) | 0.7029 | 0.5531 | -0.1498 |
-| token_drop | Hybrid (RRF) | 0.6963 | 0.5454 | -0.1509 |
-| token_drop | Reranker (LambdaMART) | 0.7081 | 0.5525 | -0.1557 |
-| token_drop | Reranker + feedback | 0.8098 | 0.5425 | -0.2673 |
-| typo | Keyword (BM25) | 0.6546 | 0.5418 | -0.1128 |
-| typo | Semantic (dense) | 0.5363 | 0.4554 | -0.0809 |
-| typo | Hybrid (score fusion) | 0.6810 | 0.5703 | -0.1107 |
-| typo | Hybrid (RRF) | 0.6779 | 0.5631 | -0.1148 |
-| typo | Reranker (LambdaMART) | 0.6971 | 0.5755 | -0.1216 |
-| typo | Reranker + feedback | 0.7839 | 0.5667 | -0.2172 |
+| reorder | Reranker + feedback | 0.7946 | 0.7944 | -0.0002 |
+| token_drop | Keyword (BM25) | 0.6801 | 0.5385 | -0.1415 |
+| token_drop | Semantic (dense) | 0.5796 | 0.4094 | -0.1702 |
+| token_drop | Hybrid (score fusion) | 0.7038 | 0.5535 | -0.1502 |
+| token_drop | Hybrid (RRF) | 0.6983 | 0.5464 | -0.1519 |
+| token_drop | Reranker (LambdaMART) | 0.7086 | 0.5531 | -0.1555 |
+| token_drop | Reranker + feedback | 0.8082 | 0.5426 | -0.2657 |
+| typo | Keyword (BM25) | 0.6558 | 0.5562 | -0.0996 |
+| typo | Semantic (dense) | 0.5377 | 0.4707 | -0.0670 |
+| typo | Hybrid (score fusion) | 0.6818 | 0.5838 | -0.0980 |
+| typo | Hybrid (RRF) | 0.6794 | 0.5771 | -0.1023 |
+| typo | Reranker (LambdaMART) | 0.6978 | 0.5893 | -0.1085 |
+| typo | Reranker + feedback | 0.7815 | 0.5798 | -0.2017 |
