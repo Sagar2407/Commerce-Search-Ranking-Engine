@@ -58,7 +58,8 @@ def client(tmp_path_factory):
         from csre.config import load_config
         from csre.search.engine import build_indexes
         from csre.serve.app import create_app
-        cfg = load_config(overrides=["search.corpus=demo_portable", "serve.default_method=bm25"])
+        cfg = load_config(overrides=["search.corpus=demo_portable", "serve.default_method=bm25",
+                                     "search.spell.min_df=1", "search.spell.min_ratio=2"])   # tiny corpus
         build_indexes(cfg, "demo_portable")
         yield TestClient(create_app(cfg, "demo_portable"))
     finally:
@@ -104,3 +105,16 @@ def test_product_graph_and_feedback(client):
 def test_storefront_page(client):
     html = client.get("/").text
     assert "<title>Commerce Search Storefront</title>" in html and "/api/search" in html
+
+
+def test_department_filter_and_suggest(client):
+    r = client.get("/api/search", params={"q": "water bottle", "method": "bm25",
+                                          "department": "Home & Kitchen"}).json()
+    assert [x["doc_id"] for x in r["results"]] == ["us:P5"] and r["filters"] == {"department": "Home & Kitchen"}
+    assert client.get("/api/suggest", params={"q": "wat"}).json() == ["water bottle"]
+
+
+def test_spelling_correction_expands_query(client):
+    r = client.get("/api/search", params={"q": "watter bottle", "method": "bm25"}).json()
+    assert r["corrections"] == [{"from": "watter", "to": "water"}]
+    assert {"us:P1", "us:P2"} <= {x["doc_id"] for x in r["results"][:3]}   # both water bottles are found

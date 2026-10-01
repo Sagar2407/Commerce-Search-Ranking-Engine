@@ -78,6 +78,8 @@ class DocTable:
         brands = cat["brand_norm"].fill_null("").to_list()
         self.brand_vocab = {b: i for i, b in enumerate(sorted(set(brands) - {""}))}
         self.brand = np.asarray([self.brand_vocab.get(b, -1) for b in brands], np.int64)
+        if not departments:   # no query-department model: index the catalog's own departments (filters still work)
+            departments = sorted(c for c in cat["category"].drop_nulls().unique().to_list() if c != "Unknown")
         self.dept_index = {d: i for i, d in enumerate(departments)}
         self.category = np.asarray([self.dept_index.get(c, -1) for c in cat["category"].fill_null("Unknown").to_list()],
                                    np.int64)
