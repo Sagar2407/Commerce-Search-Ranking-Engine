@@ -192,7 +192,7 @@ def evaluate(cfg: Config, corpus: str | None = None, split: str | None = None, m
     _K = (int(E["k"]), int(E["recall_k"]))
     q, judged = load_judged(eng, split)
     _JUDGED = judged
-    run_dir = cfg.path("runs", eng.ds.name, split)
+    run_dir = cfg.path("runs", eng.ds.name, split + (f"_{cfg.get('eval.tag')}" if cfg.get("eval.tag") else ""))
     run_dir.mkdir(parents=True, exist_ok=True)
     qcols = ["query_id", "query", "locale", "traffic_bucket", "length_bucket", "source", *SLICE_COLS]
     qinfo = q.select([c for c in qcols if c in q.columns])
@@ -202,7 +202,7 @@ def evaluate(cfg: Config, corpus: str | None = None, split: str | None = None, m
                     "index": {loc: {kk: v for kk, v in b.items() if kk != "locale"}
                               for loc, b in eng.index_manifest().get("locales", {}).items()}}
     items = list(zip(q["query_id"].to_list(), q["query"].to_list(), q["locale"].to_list()))
-    eng.parser.prime(q["query"].to_list(), q["locale"].to_list())   # Polars is not fork-safe: parse up front
+    eng.prime(q["query"].to_list(), q["locale"].to_list())   # Polars is not fork-safe: parse up front
 
     with stage_timer(cfg, f"eval_{eng.ds.name}_{split}") as info:
         if "rerank" in parts:
@@ -245,7 +245,14 @@ def evaluate(cfg: Config, corpus: str | None = None, split: str | None = None, m
                 }
         info.update(rows=q.height, corpus=eng.ds.name, split=split)
 
-    out = cfg.path("reports", f"eval_{eng.ds.name}_{split}.json")
+    tag = cfg.get("eval.tag")
+    out = cfg.path("reports", f"eval_{eng.ds.name}_{split}{'_' + tag if tag else ''}.json")
+    if out.exists() and set(parts) != {"rerank", "retrieval", "latency", "robustness"}:
+        # partial re-run (e.g. `--parts latency`): keep the other sections of the existing report
+        old = json.loads(out.read_text())
+        old.update({k: v for k, v in report.items() if k in parts or k not in old})
+        old["versions"], old["created_at"] = report["versions"], report["created_at"]
+        report = old
     out.write_text(json.dumps(report, indent=2, default=_json_default))
     from .report import write_markdown  # noqa: PLC0415
     write_markdown(cfg, report, out.with_suffix(".md"))
@@ -307,7 +314,7 @@ def robustness(cfg: Config, eng: Engine, q: pl.DataFrame, seed: int, n_jobs: int
     if v.height == 0:
         return None
     v = v.sample(n=min(n, v.height), seed=seed, shuffle=True)
-    eng.parser.prime(v["query"].to_list(), v["locale"].to_list())
+    eng.prime(v["query"].to_list(), v["locale"].to_list())
     items = list(zip(v["request_id"].to_list(), v["query_id"].to_list(), v["query"].to_list(), v["orig"].to_list(),
                      v["locale"].to_list(), v["variant"].to_list()))
     return pl.DataFrame(_parallel(_robust_batch, items, n_jobs, chunk=20))

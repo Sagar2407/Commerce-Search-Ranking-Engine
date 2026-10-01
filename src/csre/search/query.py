@@ -114,7 +114,7 @@ class QueryParser:
         for r in df.iter_rows(named=True):
             norm = r["qn"]
             out.append(ParsedQuery(
-                text=r["q"], locale=r["locale"], norm=norm, key=A.cache_key(r["q"]),
+                text=r["q"], locale=r["locale"], norm=norm, key=A.query_key(r["q"]),
                 attrs={t: list(r[f"q_{t}"] or []) for t in ATTR_TYPES},
                 pack_count=r["q_pack_count"],
                 brands=self.brands(norm, r["locale"]),

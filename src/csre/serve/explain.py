@@ -80,7 +80,7 @@ def shap_summary(contrib: np.ndarray, names: list[str], x: np.ndarray, top_n: in
 
 def explain_results(engine, resp, products: list[dict], top_n: int = 3) -> list[dict]:
     ix = engine.idx[resp.locale]
-    parsed = resp.context.parsed if (resp.context and resp.context.parsed) else engine.parser.parse(resp.query, resp.locale)
+    parsed = resp.context.parsed if (resp.context and resp.context.parsed) else engine.parser.parse(resp.rewritten or resp.query, resp.locale)
     names = resp.feature_names
     contrib = None
     if resp.features is not None and resp.served_by in engine.models:
@@ -94,8 +94,9 @@ def explain_results(engine, resp, products: list[dict], top_n: int = 3) -> list[
     cp = resp.context.cat_proba if resp.context else None
     out = []
     for i, (row, prod) in enumerate(zip(resp.rows.tolist(), products)):
-        title_terms = ix.bm25_title.matched_terms(resp.query, row)
-        text_terms = ix.bm25_text.matched_terms(resp.query, row)
+        q = resp.rewritten or resp.query
+        title_terms = ix.bm25_title.matched_terms(q, row)
+        text_terms = ix.bm25_text.matched_terms(q, row)
         e = {
             "matched_title_terms": title_terms,
             "matched_text_terms": text_terms,

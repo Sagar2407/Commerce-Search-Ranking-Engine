@@ -98,7 +98,7 @@ class SearchService:
         ds = engine.ds
         q = ds.queries()
         self.queries = q.filter(pl.col("locale").is_in(list(engine.idx)))
-        self._qkey = {(r["locale"], A.cache_key(r["query"])): r["query_id"]
+        self._qkey = {(r["locale"], A.query_key(r["query"])): r["query_id"]
                       for r in self.queries.select("query_id", "query", "locale").iter_rows(named=True)}
         j = ds.judgments(["query_id", "doc_id", "esci_label", "gain"])
         self._judged = {qid: dict(zip(g["doc_id"].to_list(), zip(g["esci_label"].to_list(), g["gain"].to_list())))
@@ -110,7 +110,7 @@ class SearchService:
 
     # ---------------------------------------------------------------- helpers
     def judged_query(self, query: str, locale: str) -> int | None:
-        return self._qkey.get((locale, A.cache_key(query)))
+        return self._qkey.get((locale, A.query_key(query)))
 
     def understanding(self, ctx, locale: str) -> dict:
         p = ctx.parsed
@@ -132,7 +132,7 @@ class SearchService:
         method = method or self.default_method
         if method not in METHODS:
             raise ValueError(f"unknown method {method!r}")
-        key = (locale, method, k, A.cache_key(query), explain, budget_ms,
+        key = (locale, method, k, A.query_key(query), explain, budget_ms,
                tuple(sorted(self.engine.versions.items())))
         t0 = time.perf_counter()
         if use_cache:
@@ -147,8 +147,9 @@ class SearchService:
         products = self.engine.result_rows(locale, resp.rows)
         t1 = time.perf_counter()
         # cheaper paths skip query understanding; explanations, badges and the understanding panel need it
-        resp.context = self.engine.complete(resp.context or self.engine.context(query, locale, full=True),
-                                            query, locale)
+        q_eff = resp.rewritten or query
+        resp.context = self.engine.complete(resp.context or self.engine.context(q_eff, locale, full=True),
+                                            q_eff, locale)
         expl = explain_results(self.engine, resp, products, self.top_n) if explain and len(resp.rows) else None
         t_expl = (time.perf_counter() - t1) * 1e3
         qid = self.judged_query(query, locale)
@@ -170,6 +171,7 @@ class SearchService:
             "engine_ms": resp.total_ms, "explain_ms": round(t_expl, 3), "candidates": resp.candidates,
             "versions": resp.versions, "understanding": self.understanding(ctx, locale),
             "judged_query_id": qid, "results": results,
+            "corrected_query": resp.rewritten, "corrections": [{"from": a, "to": b} for a, b in resp.corrections],
         }
         if judged:
             rel = {self.engine.idx[locale].rows([d])[0]: (g, lab) for d, (lab, g) in judged.items()}
@@ -226,7 +228,7 @@ class SearchService:
         locale, query, doc_id, event = ev["locale"], ev["query"], ev["doc_id"], ev["event"]
         if event not in ("impression", "click", "cart", "purchase", "thumbs_up", "thumbs_down"):
             raise ValueError(f"unknown event {event!r}")
-        key = A.cache_key(query)
+        key = A.query_key(query)
         row = int(self.engine.idx[locale].rows([doc_id])[0])
         if row < 0:
             raise KeyError(doc_id)

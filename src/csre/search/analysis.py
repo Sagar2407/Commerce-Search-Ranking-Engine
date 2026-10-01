@@ -73,6 +73,13 @@ def cache_key(s: str) -> str:
     return " ".join(u.lstrip(CJK_MARK) for u in units(s))
 
 
+def query_key(s: str) -> str:
+    """Order-insensitive query key for feedback aggregation and the result cache: the sorted bag of normalised
+    words. Every ranker here is a bag-of-words model, so reordered queries ("shoes women size 8" / "women shoes
+    size 8") get the same results and should share feedback; case, spacing and stop words are ignored too."""
+    return " ".join(sorted(u.lstrip(CJK_MARK) for u in units(s)))
+
+
 def units(s: str | None) -> list[str]:
     t = normalize(s)
     if not t:

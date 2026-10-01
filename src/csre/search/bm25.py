@@ -68,12 +68,18 @@ class BM25Index:
         tids, qtf = self.query_terms(query) if isinstance(query, str) else query
         s = np.zeros(self.n_docs, np.float32)
         touched = []
+        total = 0
         for t, q in zip(tids, qtf):
             lo, hi = self._indptr[t], self._indptr[t + 1]
             rows = self._indices[lo:hi]
             s[rows] += self._data[lo:hi] * q            # rows are unique within a posting list
             touched.append(rows)
-        hit = np.unique(np.concatenate(touched)) if touched else np.zeros(0, np.int32)
+            total += hi - lo
+        if not touched:
+            return s, np.zeros(0, np.int64)
+        # matched docs: sorting the concatenated postings is O(P log P) and costs ~0.5 s when common terms put
+        # ~1M postings in play; a linear scan of the score array is ~1 ms, so switch above a small threshold
+        hit = np.unique(np.concatenate(touched)) if total < self.n_docs // 32 else np.flatnonzero(s)
         return s, hit
 
     def search(self, query: str, k: int = 100, allowed: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray]:
@@ -84,7 +90,7 @@ class BM25Index:
             return np.zeros(0, np.int64), np.zeros(0, np.float32)
         hs = s[hit]
         if len(hit) > k:
-            top = np.argpartition(-hs, k - 1)[:k]
+            top = np.argpartition(hs, len(hs) - k)[-k:]
             hit, hs = hit[top], hs[top]
         order = np.lexsort((hit, -hs))               # score desc, doc index asc (deterministic ties)
         return hit[order].astype(np.int64), hs[order]

@@ -175,7 +175,7 @@ def extract_features(eng, q: pl.DataFrame, split: str, n_jobs: int) -> tuple[np.
             _JUD[qid] = (gg["row"].to_numpy(), gg["grade"].to_numpy().astype(np.int32))
     items = [(a, b, c) for a, b, c in zip(q["query_id"].to_list(), q["query"].to_list(), q["locale"].to_list())
              if a in _JUD]
-    eng.parser.prime([b for _, b, _ in items], [c for _, _, c in items])   # no Polars in forked workers
+    eng.prime([b for _, b, _ in items], [c for _, _, c in items])   # no Polars in forked workers
     batches = [items[i:i + 200] for i in range(0, len(items), 200)]
     res = []
     with mp.get_context("fork").Pool(n_jobs) as pool:

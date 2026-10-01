@@ -74,6 +74,13 @@ search:
     # ESCI gains on grades 0..3 (I, C, S, E) so LightGBM optimises the metric we report
     label_gain: [0.0, 0.01, 0.1, 1.0]
 
+  spell:                       # catalog-vocabulary spelling correction (symmetric delete, 1 edit)
+    enabled: true
+    mode: expand               # expand (keep the word, add the suggestion) | replace
+    min_df: 5                  # a suggestion must appear in at least this many products
+    max_df: 3                  # only words seen in fewer products than this are corrected
+    min_ratio: 20              # ... and the suggestion must be this many times more frequent
+
   query_category:
     min_confidence: 0.35       # below this a query is shown category chips ("did you mean ...")
 

@@ -142,3 +142,29 @@ def test_feedback_store_lookup_and_live_events():
     raw, _ = st.lookup("us", "shoe", np.array([7]))
     assert raw[0, 0] == 1 and raw[0, 1] == 1
     assert st.features(raw, 1.0).shape == (1, 6)
+
+
+# ---------------------------------------------------------------- spelling correction / query keys
+def test_damerau1():
+    from csre.search.spell import damerau1
+    assert damerau1("headphone", "headphne") and damerau1("headphone", "haedphone")
+    assert damerau1("bottle", "bottlle") and damerau1("bottle", "botle") and damerau1("bottle", "bittle")
+    assert not damerau1("bottle", "battles") and not damerau1("shoe", "shirt")
+
+
+def test_spell_corrector_expands_unseen_words_only():
+    from csre.search.spell import SpellCorrector
+    docs = ["wireless headphones black"] * 30 + ["roka goggles"] * 2 + ["rope ladder"] * 60
+    idx = BM25Index.build(docs, n_jobs=1)
+    sc = SpellCorrector.from_bm25(idx, min_df=5, max_df=3, min_ratio=10)
+    q, ch = sc.correct("wireles headphnes")
+    assert ch == [("wireles", "wireless"), ("headphnes", "headphone")]
+    assert q == "wireles wireless headphnes headphone"           # expand keeps the original words
+    assert sc.correct("wireles", mode="replace")[0] == "wireless"
+    assert sc.correct("roka goggles")[1] == []                     # a real (rare) catalog word is left alone
+    assert sc.correct("rtx 3080")[1] == []                         # numbers / short tokens untouched
+
+
+def test_query_key_is_order_insensitive():
+    assert A.query_key("Shoes for Women size 8") == A.query_key("women shoes  size 8")
+    assert A.query_key("water bottle") != A.query_key("bottle opener")

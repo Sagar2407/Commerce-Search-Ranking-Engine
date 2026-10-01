@@ -398,6 +398,7 @@ async function runSearch() {
     $("#status").innerHTML = `<span><b>${res.results.length}</b> results</span>
       <span>served by <b style="color:${mc(res.served_by)}">${esc(labelOf(res.served_by))}</b></span>
       <span>engine <b class="mono">${fmt(res.engine_ms, 1)} ms</b> <span class="muted">(${Object.entries(T).map(([k, v]) => `${k} ${fmt(v, 1)}`).join(" · ")})</span></span>
+      ${res.corrected_query ? `<span>showing results for <b>${esc(res.corrections.map(c => c.to).join(", "))}</b> <span class="muted">(spelling: ${esc(res.corrections.map(c => c.from + " → " + c.to).join(", "))})</span></span>` : ""}
       ${res.cache?.hit ? `<span class="pill good">cache hit</span>` : ""}
       ${res.fallback_reason ? `<span class="pill bad" title="Graceful degradation">fallback: ${esc(res.fallback_reason)}</span>` : ""}`;
     const qq = res.quality;

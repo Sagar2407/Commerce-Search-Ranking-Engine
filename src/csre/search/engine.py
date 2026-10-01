@@ -151,6 +151,8 @@ class SearchResponse:
     features: np.ndarray | None = None      # for ltr methods: features of the returned rows
     feature_names: list[str] | None = None
     extra: dict = field(default_factory=dict)
+    rewritten: str | None = None             # query actually searched after spelling correction
+    corrections: list = field(default_factory=list)
 
     @property
     def total_ms(self) -> float:
@@ -203,6 +205,16 @@ class Engine:
                     self.versions[name] = self.registry.resolve(name)
                     self.model_meta = getattr(self, "model_meta", {})
                     self.model_meta[name] = json.loads((p / "model.json").read_text())
+        SP = cfg.get("search.spell", {}) or {}
+        self.spell_mode = SP.get("mode", "expand") if SP.get("enabled", False) else None
+        self.spellers = {}
+        if self.spell_mode:
+            from .spell import SpellCorrector  # noqa: PLC0415
+            bp = self.ds.brand_patterns()
+            for loc, ix in self.idx.items():
+                self.spellers[loc] = SpellCorrector.from_bm25(
+                    ix.bm25_text, int(SP.get("min_df", 5)), int(SP.get("max_df", 3)), float(SP.get("min_ratio", 20)),
+                    protected={w for b in bp.get(loc, []) for w in b.split()})
         hyb = self.registry.meta("hybrid")
         self.alpha = float(hyb["params"]["alpha"]) if hyb else float(cfg.get("search.hybrid.alpha", 0.5))
         if hyb:
@@ -231,7 +243,7 @@ class Engine:
         if qds is None or not self.idx:
             return None
         q = self.ds.queries().select("query_id", "query", "locale")
-        keys = q.with_columns(pl.col("query").map_elements(A.cache_key, return_dtype=pl.Utf8).alias("key"))
+        keys = q.with_columns(pl.col("query").map_elements(A.query_key, return_dtype=pl.Utf8).alias("key"))
         df = qds.join(keys.select("query_id", "locale", "key"), on="query_id")
         parts = []
         for loc, ix in self.idx.items():
@@ -253,6 +265,16 @@ class Engine:
             if "ltr_fb" in self.models and self.feedback is not None:
                 out.append("ltr_fb")
         return out
+
+    # ---------------------------------------------------------------- query rewriting
+    def rewrite(self, query: str, locale: str) -> tuple[str, list[tuple[str, str]]]:
+        sp = self.spellers.get(locale)
+        return sp.correct(query, self.spell_mode) if sp is not None else (query, [])
+
+    def prime(self, texts: list[str], locales: list[str]) -> None:
+        """Parse every (rewritten) query up front; required before forking workers (Polars is not fork-safe)."""
+        rw = [self.rewrite(t, l)[0] for t, l in zip(texts, locales)]
+        self.parser.prime(rw, list(locales))
 
     # ---------------------------------------------------------------- query context
     def context(self, query: str, locale: str, timings: dict | None = None, full: bool = True) -> QueryContext:
@@ -281,6 +303,15 @@ class Engine:
 
     # ---------------------------------------------------------------- retrieval
     def search(self, query: str, locale: str, method: str = "ltr", k: int = 10, budget_ms: float | None = None,
+               **kw) -> SearchResponse:
+        resp = self._search(query, locale, method, k, budget_ms, **kw)
+        rw, corr = self.rewrite(query, locale)
+        resp.query = query
+        if corr:
+            resp.rewritten, resp.corrections = rw, corr
+        return resp
+
+    def _search(self, query: str, locale: str, method: str = "ltr", k: int = 10, budget_ms: float | None = None,
                n_candidates: int | None = None, rerank_depth: int | None = None, exact: bool = False,
                rescue: bool = False) -> SearchResponse:
         """Full-catalog retrieval with graceful degradation to cheaper methods.
@@ -293,6 +324,9 @@ class Engine:
         ix = self.idx[locale]
         T: dict[str, float] = {}
         t0 = time.perf_counter()
+        query, corrections = self.rewrite(query, locale)
+        if corrections:
+            T["spell"] = (time.perf_counter() - t0) * 1e3
         H = self.cfg.get("search.hybrid")
         n_cand = n_candidates or int(H["candidates_per_retriever"])
         depth = rerank_depth or int(self.cfg.get("search.ltr.rerank_depth", 100))
@@ -401,6 +435,7 @@ class Engine:
         """Scores of every method for a *given* candidate set (the judged products of a query)."""
         ix = self.idx[locale]
         out: dict[str, np.ndarray] = {}
+        query = self.rewrite(query, locale)[0]
         need_ctx = any(m != "bm25" for m in methods)
         if need_ctx and ctx is None:
             ctx = self.context(query, locale, full=any(m in ("ltr", "ltr_fb") for m in methods))

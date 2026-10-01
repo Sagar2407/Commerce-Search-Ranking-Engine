@@ -74,7 +74,7 @@ def simulate_ab(cfg: Config, corpus: str | None = None, n_queries: int = 3000, s
         rng = np.random.default_rng(cfg.seed)
         pick = rng.choice(q.height, size=min(n_queries, q.height), replace=False, p=w / w.sum())
         qs = q[pick.tolist()]
-        eng.parser.prime(qs["query"].to_list(), qs["locale"].to_list())
+        eng.prime(qs["query"].to_list(), qs["locale"].to_list())
         items = list(zip(qs["query_id"].to_list(), qs["query"].to_list(), qs["locale"].to_list()))
         batches = [items[i:i + 25] for i in range(0, len(items), 25)]
         ranked = []
