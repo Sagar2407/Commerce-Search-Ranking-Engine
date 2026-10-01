@@ -284,5 +284,13 @@
     "seconds": 91.37,
     "rows_per_sec": 0,
     "finished_at": "2026-10-01T11:37:38"
+  },
+  "simulate_pilot": {
+    "stage": "simulate_pilot",
+    "rows": 121910,
+    "users": 40000,
+    "seconds": 3255.4,
+    "rows_per_sec": 37,
+    "finished_at": "2026-10-01T17:23:55"
   }
 }
