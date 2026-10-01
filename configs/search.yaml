@@ -118,3 +118,9 @@ serve:
     ttl_s: 900
   explain_top_n: 3             # feature contributions shown per result
   feedback_flush_every: 50
+  experiment:                  # A/B pilot: shoppers (user_id) are split between rankings; see docs/pilot.md
+    enabled: false
+    name: ltr_vs_bm25_v1
+    salt: ltr_vs_bm25_v1       # change to re-randomise
+    arms: {control: bm25, treatment: ltr}   # incumbent keyword search vs the reranker
+    allocation: {control: 0.5, treatment: 0.5}

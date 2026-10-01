@@ -64,3 +64,14 @@ flowchart LR
   the loaded indexes copy-on-write (query parsing is primed in the parent because Polars is not fork-safe).
 * `csre bench` builds a 2.5M-product shard (real catalog + phase-1 distractors) and measures it; larger
   catalogs are served as shards searched in parallel, with projected latency, memory and cost per tier.
+
+## Comparing a pretrained encoder
+
+Pretrained multilingual encoders could not be downloaded in the build environment, so the semantic retriever is
+trained in-domain. With Hugging Face access, `scripts/pretrained_comparison.sh [model]` (default
+`intfloat/multilingual-e5-small`) registers the model as a `candidate` dense encoder, builds separate indexes
+(`data/indexes/full_pretrained`), and evaluates BM25, dense and both hybrids on the same test queries into
+`data/reports/eval_full_test_pretrained.md`, without touching production models or indexes. The hybrid weight and
+the reranker were tuned with the in-domain encoder, so the fair comparison is dense vs dense and RRF vs RRF; if the
+pretrained model wins, promote it (`csre promote --target dense_encoder=vN`) and re-run `make search` so the hybrid
+weight and reranker are refit on its scores.

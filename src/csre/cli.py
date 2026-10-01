@@ -19,7 +19,7 @@ from .config import load_config
 STAGES = ["acquire", "taxonomy", "catalog", "judgments", "graph", "commerce", "traffic", "replay", "scale",
           "demo", "validate", "datacard"]
 SEARCH_STAGES = ["train-dense", "index", "train-qcat", "tune-hybrid", "train-ltr", "eval"]
-EXTRA_SEARCH = ["train-esci-class"]
+EXTRA_SEARCH = ["train-esci-class", "simulate-pilot", "analyze-experiment", "register-pretrained"]
 OTHER = ["serve", "bench", "snapshot", "models", "promote", "simulate-ab", *EXTRA_SEARCH]
 
 
@@ -52,6 +52,16 @@ def run_search_stage(stage: str, cfg, args) -> None:
     elif stage == "train-esci-class":
         from .search.train import train_esci_class
         train_esci_class(cfg, args.corpus or "full")
+    elif stage == "register-pretrained":
+        from .search.train import register_pretrained
+        print(register_pretrained(cfg, args.target or cfg.get("search.dense.st_model"), args.alias
+                                  if args.alias != "production" else "candidate"))
+    elif stage == "simulate-pilot":
+        from .evaluation.pilot_sim import simulate_pilot
+        simulate_pilot(cfg, args.corpus)
+    elif stage == "analyze-experiment":
+        from .serve.experiment import analyze
+        analyze(cfg, args.target)
     elif stage == "simulate-ab":
         from .evaluation.online_sim import simulate_ab
         simulate_ab(cfg, args.corpus)

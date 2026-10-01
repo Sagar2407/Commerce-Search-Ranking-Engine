@@ -338,3 +338,16 @@ def tune_hybrid(cfg: Config, n_queries: int = 4000, corpus: str = "full") -> str
                  best["dev_ndcg10"], curve[0]["dev_ndcg10"], curve[-1]["dev_ndcg10"])
         info.update(rows=len(per_q), alpha=best["alpha"], version=version)
     return version
+
+
+# ======================================================================================
+# pretrained encoder (comparison candidate)
+# ======================================================================================
+def register_pretrained(cfg: Config, model_name: str, alias: str = "candidate") -> str:
+    """Register a sentence-transformers model as a dense_encoder version under `alias` (never `production`
+    unless promoted), so it can be indexed and evaluated next to the in-domain encoder."""
+    from .dense import SentenceTransformerEncoder  # noqa: PLC0415
+    enc = SentenceTransformerEncoder(model_name)
+    return ModelRegistry(cfg).register("dense_encoder", enc.save, alias=alias,
+                                       params={"backend": "sentence_transformers", "model_name": model_name},
+                                       data={"training": "none (pretrained)"})

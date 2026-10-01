@@ -17,11 +17,8 @@ PRODUCTS = [
 ]
 
 
-@pytest.fixture(scope="module")
-def client(tmp_path_factory):
-    pytest.importorskip("fastapi")
-    pytest.importorskip("httpx")
-    root = tmp_path_factory.mktemp("csre")
+def build_tiny_corpus(root):
+    """Six products, two judged queries, one complement edge, in the demo_portable layout under `root`."""
     shutil.copytree(ROOT / "configs", root / "configs")
     d = root / "data" / "demo_portable"
     d.mkdir(parents=True)
@@ -48,6 +45,15 @@ def client(tmp_path_factory):
                   "grade": [3, 3, 1, 3, 2], "split": "test"}).write_parquet(d / "judgments.parquet")
     pl.DataFrame({"src_doc": ["us:P1"], "dst_doc": ["us:P5"], "relation": ["complement"], "support": [3],
                   "example_query_id": [1]}).write_parquet(d / "product_edges.parquet")
+    return root
+
+
+@pytest.fixture(scope="module")
+def client(tmp_path_factory):
+    pytest.importorskip("fastapi")
+    pytest.importorskip("httpx")
+    root = tmp_path_factory.mktemp("csre")
+    build_tiny_corpus(root)
 
     import os
     old = os.environ.get("CSRE_ROOT")

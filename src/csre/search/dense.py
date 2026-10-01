@@ -149,11 +149,11 @@ class SentenceTransformerEncoder:
 
     def encode(self, texts: list[str], n_jobs: int | None = None, chunk: int = 0) -> np.ndarray:
         texts = [("passage: " + t) if self._e5 else t for t in texts]
-        return self.model.encode(texts, batch_size=128, normalize_embeddings=True).astype(np.float32)
+        return np.asarray(self.model.encode(texts, batch_size=128, normalize_embeddings=True), np.float32)
 
     def encode_query(self, text: str) -> np.ndarray:
         t = ("query: " + text) if self._e5 else text
-        return self.model.encode([t], normalize_embeddings=True)[0].astype(np.float32)
+        return np.asarray(self.model.encode([t], normalize_embeddings=True)[0], np.float32)
 
     def known_feature_share(self, text: str) -> float:
         return 1.0

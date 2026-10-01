@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 import threading
 import time
+import uuid
 from collections import OrderedDict
 from pathlib import Path
 
@@ -127,6 +128,8 @@ class SearchService:
         self.edges = ds.edges()
         self.cat_comp = ds.category_complements()
         self.request_log: list[dict] = []
+        from .experiment import Experiment  # noqa: PLC0415
+        self.experiment = Experiment.from_config(cfg)
 
     # ---------------------------------------------------------------- helpers
     def judged_query(self, query: str, locale: str) -> int | None:
@@ -149,7 +152,36 @@ class SearchService:
     # ---------------------------------------------------------------- search
     def search(self, query: str, locale: str, method: str | None = None, k: int = 10, explain: bool = True,
                use_cache: bool = True, budget_ms: float | None = None, rescue: bool | None = None,
-               filters: dict | None = None) -> dict:
+               filters: dict | None = None, user_id: str | None = None, pre_success: float | None = None) -> dict:
+        """Search; with a user id and no explicit method, the running experiment picks the ranking (by user)."""
+        arm = None
+        if self.experiment is not None and user_id and method is None:
+            arm = self.experiment.assign(user_id)
+            method = self.experiment.arms[arm]
+            budget_ms = budget_ms if budget_ms is not None else self.budget_ms   # production path: enforce budget
+        out = self._search(query, locale, method, k, explain, use_cache, budget_ms, rescue, filters)
+        if arm is not None:
+            sid = uuid.uuid4().hex
+            out = dict(out)
+            out["experiment"] = {"name": self.experiment.name, "arm": arm, "search_id": sid}
+            self._log({"event": "exposure", "experiment": self.experiment.name, "arm": arm, "user_id": user_id,
+                       "search_id": sid, "locale": locale, "query": query, "method": method,
+                       "served_by": out["served_by"], "fallback_reason": out["fallback_reason"],
+                       "engine_ms": out.get("engine_ms"), "cache_hit": out["cache"]["hit"],
+                       "n_results": len(out["results"]), "doc_ids": [r["doc_id"] for r in out["results"]],
+                       "versions": out["versions"], "pre_success": pre_success})
+        return out
+
+    def _log(self, rec: dict) -> None:
+        rec = {"ts": time.strftime("%Y-%m-%dT%H:%M:%S"), **rec}
+        with self.fb_lock:
+            with open(self.fb_dir / f"events-{time.strftime('%Y%m%d')}.jsonl", "a") as f:
+                f.write(json.dumps(rec, ensure_ascii=False, default=str) + "\n")
+            self.fb_count += 1
+
+    def _search(self, query: str, locale: str, method: str | None = None, k: int = 10, explain: bool = True,
+                use_cache: bool = True, budget_ms: float | None = None, rescue: bool | None = None,
+                filters: dict | None = None) -> dict:
         method = method or self.default_method
         if method not in METHODS:
             raise ValueError(f"unknown method {method!r}")
@@ -260,13 +292,12 @@ class SearchService:
             # position-based propensity (1/rank) for IPS-weighted clicks, as in the simulator's click model
             prop = 1.0 / max(1, int(ev.get("position") or 1))
             self.engine.feedback.add(locale, key, row, event, propensity=prop)
-        rec = {"ts": time.strftime("%Y-%m-%dT%H:%M:%S"), "locale": locale, "query": query, "key": key,
-               "doc_id": doc_id, "event": event, "position": ev.get("position"), "method": ev.get("method"),
-               "versions": self.engine.versions}
-        with self.fb_lock:
-            with open(self.fb_dir / f"events-{time.strftime('%Y%m%d')}.jsonl", "a") as f:
-                f.write(json.dumps(rec, ensure_ascii=False) + "\n")
-            self.fb_count += 1
+        rec = {"locale": locale, "query": query, "key": key, "doc_id": doc_id, "event": event,
+               "position": ev.get("position"), "method": ev.get("method"), "versions": self.engine.versions}
+        for f_ in ("user_id", "search_id", "experiment", "arm"):   # experiment attribution, when present
+            if ev.get(f_):
+                rec[f_] = ev[f_]
+        self._log(rec)
         n = self.cache.invalidate(lambda k_: k_[0] == locale and k_[3] == key and k_[1] == "ltr_fb")
         return {"ok": True, "invalidated_cache_entries": n, "events_logged": self.fb_count}
 
