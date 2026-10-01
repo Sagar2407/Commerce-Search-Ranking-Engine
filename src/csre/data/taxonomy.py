@@ -346,12 +346,16 @@ def train_category_model(cfg: Config, propagate: bool = True) -> dict:
         cfg.path("reports").mkdir(parents=True, exist_ok=True)
         cfg.path("reports", "category_model_metrics.json").write_text(json.dumps(metrics, indent=2))
         if "image_url" in meta.columns:   # display metadata for the storefront (real, from ESCI-S)
-            write_parquet(meta.select(
-                (pl.col("locale") + ":" + pl.col("product_id")).alias("doc_id"), "locale", "category_path",
-                "category_leaf", "image_url", "brand_attr").filter(pl.col("product_id").is_not_null()),
-                cfg.path("processed", "product_meta.parquet"))
+            write_parquet(product_meta(meta), cfg.path("processed", "product_meta.parquet"))
         info.update(rows=len(y_all), accuracy=metrics["accuracy"], coverage=metrics["coverage_at_threshold"])
     return metrics
+
+
+def product_meta(meta: pl.DataFrame) -> pl.DataFrame:
+    """Storefront display metadata (real, from ESCI-S product pages)."""
+    return meta.filter(pl.col("product_id").is_not_null()).select(
+        (pl.col("locale") + ":" + pl.col("product_id")).alias("doc_id"), "locale", "category_path",
+        "category_leaf", "image_url", "brand_attr")
 
 
 class CategoryPredictor:

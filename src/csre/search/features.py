@@ -64,7 +64,7 @@ class DocTable:
         self.attr: dict[str, sp.csr_matrix] = {}
         for a in ATTR_TYPES:
             col = f"attr_{a}"
-            ex = cat.select(pl.int_range(0, n, dtype=pl.Int64).alias("row"), pl.col(col)).explode(col).drop_nulls()
+            ex = cat.select(pl.int_range(0, n, dtype=pl.Int64).alias("row"), pl.col(col)).explode(col, empty_as_null=True).drop_nulls()
             vals = ex[col].unique().sort().to_list()
             voc = {v: i for i, v in enumerate(vals)}
             self.attr_vocab[a] = voc

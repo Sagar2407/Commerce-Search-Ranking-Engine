@@ -1,0 +1,642 @@
+<title>Commerce Search Storefront</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,500..800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a storefront workbench — search bar + method dial on top, query understanding beside the results,
+   every ranking method keeps one colour across shop, compare and evaluation views. */
+:root {
+  --bg: #eef2f1; --surface: #ffffff; --sunken: #e3e9e7; --ink: #15201e; --muted: #56645f; --line: #d3dcd9;
+  --accent: #0d6b63; --accent-ink: #ffffff; --accent-soft: #d3ece8; --tag: #f0b13b; --tag-ink: #3b2a05;
+  --good: #23824f; --good-soft: #dcefe3; --bad: #b9431a; --bad-soft: #f6e0d6; --unk: #7d8a86; --unk-soft: #e6ebe9;
+  --m-bm25: #3a62c4; --m-dense: #8a43aa; --m-hybrid_rrf: #5a9638; --m-hybrid: #1b8d84; --m-ltr: #d07a1f; --m-ltr_fb: #c0385a;
+  --shadow: 0 1px 2px rgba(21,32,30,.06), 0 4px 14px rgba(21,32,30,.06);
+  --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e1513; --surface: #151e1c; --sunken: #1b2624; --ink: #e5eeeb; --muted: #97a6a1; --line: #293633;
+  --accent: #3cc2b3; --accent-ink: #062320; --accent-soft: #163a36; --tag: #f0b13b; --tag-ink: #2e2003;
+  --good: #57c98c; --good-soft: #17352a; --bad: #f08a5d; --bad-soft: #3d2219; --unk: #879591; --unk-soft: #22302d;
+  --m-bm25: #7d9cf0; --m-dense: #c48ae0; --m-hybrid_rrf: #8fcb6b; --m-hybrid: #4cc9bd; --m-ltr: #f1a457; --m-ltr_fb: #f07892;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 18px rgba(0,0,0,.25); color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0e1513; --surface: #151e1c; --sunken: #1b2624; --ink: #e5eeeb; --muted: #97a6a1; --line: #293633;
+  --accent: #3cc2b3; --accent-ink: #062320; --accent-soft: #163a36; --tag: #f0b13b; --tag-ink: #2e2003;
+  --good: #57c98c; --good-soft: #17352a; --bad: #f08a5d; --bad-soft: #3d2219; --unk: #879591; --unk-soft: #22302d;
+  --m-bm25: #7d9cf0; --m-dense: #c48ae0; --m-hybrid_rrf: #8fcb6b; --m-hybrid: #4cc9bd; --m-ltr: #f1a457; --m-ltr_fb: #f07892;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 18px rgba(0,0,0,.25); color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 400 15px/1.5 var(--f-body); margin: 0; }
+.wrap { max-width: 1280px; margin: 0 auto; padding-inline: 20px; }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; }
+h2 { font-size: 1.35rem; font-weight: 750; font-stretch: 92%; letter-spacing: -.01em; }
+h3 { font-size: 1rem; font-weight: 650; }
+.mono, .num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+.eyebrow { font: 600 .72rem/1.2 var(--f-body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+button, select, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+a { color: var(--accent); }
+
+/* ---------- top bar ---------- */
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--surface); border-bottom: 1px solid var(--line); }
+.topbar .wrap { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; padding-block: 12px; }
+.brand { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.brand b { font: 800 1.25rem/1 var(--f-display); font-stretch: 112%; letter-spacing: -.02em; }
+.brand span { font-size: .78rem; color: var(--muted); }
+.searchform { flex: 1 1 420px; display: flex; gap: 8px; min-width: 0; }
+.searchbox { flex: 1; display: flex; align-items: center; gap: 8px; background: var(--sunken); border: 1px solid var(--line); border-radius: 999px; padding: 0 6px 0 16px; min-width: 0; }
+.searchbox:focus-within { border-color: var(--accent); background: var(--surface); }
+.searchbox input { flex: 1; min-width: 0; border: 0; background: transparent; padding: 10px 0; outline: none; font-size: 1rem; }
+.searchbox select { border: 0; background: transparent; font-size: .85rem; color: var(--muted); padding: 6px; }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 8px 16px; font-weight: 500; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+.btn:hover { border-color: var(--accent); }
+.mode { font-size: .75rem; padding: 4px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--ink); white-space: nowrap; }
+
+/* ---------- tabs ---------- */
+.tabs { display: flex; gap: 4px; overflow-x: auto; padding-block: 10px 0; }
+.tab { border: 0; background: none; padding: 8px 14px 10px; border-bottom: 2px solid transparent; color: var(--muted); font-weight: 500; white-space: nowrap; }
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+main { padding-block: 18px 60px; }
+
+/* ---------- example chips ---------- */
+.examples { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; margin-block: 2px 16px; }
+.examples .grp { display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; }
+.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 3px 11px; font-size: .82rem; }
+.chip:hover { border-color: var(--accent); }
+
+/* ---------- method dial ---------- */
+.dial { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-bottom: 16px; }
+.dial button { text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: var(--r); padding: 10px 12px; display: grid; gap: 2px; position: relative; }
+.dial button::before { content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 3px; background: var(--mc); }
+.dial button[aria-checked="true"] { border-color: var(--mc); box-shadow: 0 0 0 1px var(--mc) inset; }
+.dial .nm { font-weight: 600; font-size: .9rem; }
+.dial .ds { font-size: .74rem; color: var(--muted); line-height: 1.3; }
+.dial button:disabled { opacity: .45; cursor: not-allowed; }
+
+/* ---------- shop layout ---------- */
+.shop { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 900px) { .shop { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: grid; gap: 14px; min-width: 0; }
+.panel h3 { font-size: .95rem; }
+.kv { display: grid; gap: 6px; }
+.kv .row { display: flex; justify-content: space-between; gap: 10px; font-size: .85rem; }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.pill { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 2px 9px; font-size: .76rem; font-weight: 500; background: var(--sunken); color: var(--ink); white-space: nowrap; }
+.pill.good { background: var(--good-soft); color: var(--good); }
+.pill.bad { background: var(--bad-soft); color: var(--bad); }
+.pill.unk { background: var(--unk-soft); color: var(--muted); }
+.pill.tag { background: var(--tag); color: var(--tag-ink); }
+.bar { height: 6px; background: var(--sunken); border-radius: 6px; overflow: hidden; }
+.bar > i { display: block; height: 100%; background: var(--accent); border-radius: 6px; }
+.deptrow { display: grid; grid-template-columns: minmax(0,1fr) 44px; gap: 4px 8px; align-items: center; font-size: .8rem; }
+.deptrow .bar { grid-column: 1 / -1; }
+.notice { border-radius: var(--r); padding: 10px 12px; background: var(--accent-soft); font-size: .85rem; }
+.notice.warn { background: var(--bad-soft); }
+
+.statusline { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; font-size: .82rem; color: var(--muted); margin-bottom: 10px; }
+.statusline b { color: var(--ink); font-weight: 600; }
+.quality { display: flex; flex-wrap: wrap; gap: 8px 18px; padding: 10px 14px; border-radius: var(--r); background: var(--surface); border: 1px dashed var(--line); font-size: .82rem; margin-bottom: 12px; }
+.results { display: grid; gap: 10px; }
+.card { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px; }
+@media (max-width: 520px) { .card { grid-template-columns: 64px minmax(0,1fr); } }
+.thumb { width: 100%; aspect-ratio: 1; border-radius: 8px; background: var(--sunken); display: grid; place-items: center; overflow: hidden; max-width: 100%; }
+.thumb img { width: 100%; height: 100%; object-fit: contain; background: #fff; }
+.thumb .ph { font: 800 1.05rem/1 var(--f-display); font-stretch: 80%; color: var(--muted); text-align: center; padding: 4px; }
+.card .top { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 4px; }
+.card .rank { font: 600 .78rem/1 var(--f-mono); color: var(--muted); }
+.card h3 { font: 500 .95rem/1.35 var(--f-body); }
+.card h3 mark { background: var(--accent-soft); color: inherit; border-radius: 3px; padding: 0 1px; }
+.card .meta { font-size: .8rem; color: var(--muted); margin-top: 2px; }
+.pricerow { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; margin-top: 6px; font-size: .85rem; }
+.price { font: 700 1rem/1 var(--f-display); font-stretch: 95%; }
+.stars { color: var(--muted); }
+.checks { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+.actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.actions button { border: 1px solid var(--line); background: none; border-radius: 999px; padding: 3px 10px; font-size: .78rem; }
+.actions button:hover { border-color: var(--accent); }
+.actions button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.why { margin-top: 10px; border-top: 1px dashed var(--line); padding-top: 10px; display: grid; gap: 10px; font-size: .83rem; }
+.contrib { display: grid; grid-template-columns: 110px minmax(0, 1fr) 54px; gap: 4px 8px; align-items: center; }
+.contrib .track { position: relative; height: 10px; background: var(--sunken); border-radius: 3px; }
+.contrib .track i { position: absolute; top: 0; bottom: 0; border-radius: 3px; }
+.contrib .track .mid { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--line); }
+.rail { margin-top: 18px; }
+.rail .strip { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(150px, 180px); gap: 10px; overflow-x: auto; padding-bottom: 6px; }
+.mini { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 8px; display: grid; gap: 6px; font-size: .78rem; }
+.mini .t { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.empty { padding: 30px; text-align: center; color: var(--muted); background: var(--surface); border: 1px dashed var(--line); border-radius: var(--r); }
+
+/* ---------- compare ---------- */
+.cmp-head { display: flex; flex-wrap: wrap; gap: 10px 24px; align-items: end; margin-bottom: 14px; }
+.cmp-scroll { overflow-x: auto; padding-bottom: 8px; }
+.cmp { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(220px, 1fr); gap: 10px; min-width: min-content; }
+.col { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; display: grid; align-content: start; }
+.col header { padding: 10px 12px; border-top: 4px solid var(--mc); border-bottom: 1px solid var(--line); display: grid; gap: 4px; }
+.col header .nm { font-weight: 650; font-size: .9rem; }
+.col header .st { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: .75rem; color: var(--muted); }
+.crow { display: grid; grid-template-columns: 22px 40px minmax(0, 1fr); gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--line); font-size: .78rem; align-items: start; }
+.crow:last-child { border-bottom: 0; }
+.crow.hl { background: var(--accent-soft); }
+.crow .r { font: 600 .78rem/1.4 var(--f-mono); color: var(--muted); }
+.crow .thumb { border-radius: 6px; }
+.crow .t { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.crow .sub { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; align-items: center; }
+.mv { font: 600 .7rem/1 var(--f-mono); }
+.mv.up { color: var(--good); } .mv.down { color: var(--bad); } .mv.new { color: var(--accent); }
+.lab { font: 700 .66rem/1 var(--f-mono); padding: 3px 5px; border-radius: 4px; }
+.lab.E { background: var(--good-soft); color: var(--good); } .lab.S { background: var(--tag); color: var(--tag-ink); }
+.lab.C { background: var(--accent-soft); color: var(--accent); } .lab.I { background: var(--bad-soft); color: var(--bad); }
+.lab.U { background: var(--unk-soft); color: var(--muted); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: .76rem; color: var(--muted); align-items: center; }
+
+/* ---------- evaluation ---------- */
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr)); gap: 16px; }
+.figure { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; min-width: 0; display: grid; gap: 10px; }
+.figure p { margin: 0; font-size: .85rem; color: var(--muted); max-width: 70ch; }
+.chart svg { width: 100%; height: auto; display: block; }
+.chart text { fill: var(--muted); font: 11px var(--f-body); }
+.chart .lbl { fill: var(--ink); font-weight: 600; }
+.chart .grid line { stroke: var(--line); }
+.chart .axis { stroke: var(--muted); }
+.tbl-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: .82rem; }
+th, td { padding: 7px 10px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+th { font: 600 .72rem/1.2 var(--f-body); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+td.num, th.num { text-align: right; font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.swatch { display: inline-block; width: 10px; height: 10px; border-radius: 3px; background: var(--mc); margin-right: 6px; vertical-align: -1px; }
+.heat td.cell { text-align: right; font-family: var(--f-mono); }
+.callouts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 12px; margin-bottom: 16px; }
+.callout { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; display: grid; gap: 4px; }
+.callout .v { font: 750 1.6rem/1.1 var(--f-display); font-stretch: 90%; }
+.callout .d { font-size: .8rem; color: var(--muted); }
+.prose { max-width: 75ch; font-size: .9rem; }
+.prose li { margin-bottom: 4px; }
+
+/* ---------- drawer ---------- */
+.drawer { position: fixed; inset: 0; z-index: 40; display: grid; justify-items: end; background: rgba(10, 18, 16, .35); }
+.drawer .sheet { width: min(560px, 100%); height: 100%; overflow-y: auto; background: var(--bg); padding: 20px; padding-top: calc(20px + env(safe-area-inset-top, 0px)); display: grid; gap: 16px; align-content: start; }
+.toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 9px 16px; border-radius: 999px; font-size: .85rem; z-index: 60; max-width: calc(100% - 32px); }
+@media (prefers-reduced-motion: no-preference) { .card, .col { animation: rise .25s ease-out both; } @keyframes rise { from { transform: translateY(4px); opacity: .6; } to { transform: none; opacity: 1; } } }
+</style>
+
+<header class="topbar">
+  <div class="wrap">
+    <div class="brand"><b>Commerce Search</b><span id="corpusTag">storefront</span></div>
+    <form class="searchform" id="searchForm" role="search">
+      <div class="searchbox">
+        <input id="q" name="q" type="search" placeholder="Search products — try something vague, misspelled or specific" autocomplete="off" aria-label="Search products">
+        <select id="locale" aria-label="Market"></select>
+      </div>
+      <button class="btn primary" type="submit">Search</button>
+    </form>
+    <span class="mode" id="modeTag">Loading…</span>
+  </div>
+  <div class="wrap"><nav class="tabs" role="tablist" aria-label="Views">
+    <button class="tab" role="tab" id="t-shop" aria-selected="true" data-tab="shop">Shop</button>
+    <button class="tab" role="tab" id="t-compare" aria-selected="false" data-tab="compare">Compare approaches</button>
+    <button class="tab" role="tab" id="t-eval" aria-selected="false" data-tab="eval">Evaluation</button>
+    <button class="tab" role="tab" id="t-system" aria-selected="false" data-tab="system">Under the hood</button>
+  </nav></div>
+</header>
+
+<main class="wrap">
+  <div class="examples" id="examples"></div>
+
+  <section id="v-shop">
+    <div class="dial" id="dial" role="radiogroup" aria-label="Ranking approach"></div>
+    <div class="shop">
+      <aside class="panel" id="understanding"><h3>Query understanding</h3><p class="muted">Search to see detected attributes, brands, exclusions and likely departments.</p></aside>
+      <div style="min-width:0">
+        <div class="statusline" id="status"></div>
+        <div id="quality"></div>
+        <div class="results" id="results"><div class="empty">Pick an example query above or type your own.</div></div>
+        <div id="rails"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="v-compare" hidden>
+    <div class="cmp-head">
+      <div><div class="eyebrow">Same query, every approach</div><h2 id="cmpTitle">Compare ranking approaches</h2></div>
+      <div class="legend" id="cmpLegend"></div>
+    </div>
+    <div id="cmpSummary"></div>
+    <div class="cmp-scroll"><div class="cmp" id="cmp"></div></div>
+  </section>
+
+  <section id="v-eval" hidden><div id="evalBody" class="empty">Loading the evaluation report…</div></section>
+  <section id="v-system" hidden><div id="sysBody" class="empty">Loading…</div></section>
+</main>
+
+<div class="drawer" id="drawer" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Product details"></div></div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(() => {
+const SNAP = window.__CSRE_SNAPSHOT__ || null;
+const $ = (s, el = document) => el.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = (x, d = 3) => x == null || Number.isNaN(x) ? "–" : Number(x).toFixed(d);
+const METHOD_DESC = {
+  bm25: "Exact keywords; cheapest", dense: "Meaning, typos, synonyms", hybrid_rrf: "Merge both lists by rank",
+  hybrid: "Blend both scores", ltr: "Learned reranker on product content", ltr_fb: "Reranker + shopper feedback (simulated)"
+};
+const LABEL_NAME = { E: "Exact", S: "Substitute", C: "Complement", I: "Irrelevant", U: "Unjudged" };
+const state = { locale: "us", method: null, q: "", tab: "shop", health: null, last: null, cmp: null, fb: {} };
+
+// ------------------------------------------------------------------ data access (live API or embedded snapshot)
+const norm = q => (q || "").normalize("NFKC").toLowerCase().replace(/\s+/g, " ").trim();
+function snapFind(q, loc) { return SNAP && SNAP.queries[`${loc}|${norm(q)}`] || null; }
+class SnapMiss extends Error {}
+const api = {
+  async get(path) { const r = await fetch(path); if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || r.statusText); return r.json(); },
+  health() { return SNAP ? Promise.resolve(SNAP.health) : this.get("/api/health"); },
+  examples(loc) { return SNAP ? Promise.resolve(SNAP.examples[loc] || {}) : this.get(`/api/examples?locale=${loc}`); },
+  async search(q, loc, m) {
+    if (SNAP) { const c = snapFind(q, loc); if (!c) throw new SnapMiss(); return c.runs[m] || Object.values(c.runs).pop(); }
+    return this.get(`/api/search?q=${encodeURIComponent(q)}&locale=${loc}&method=${m}&k=10`);
+  },
+  async compare(q, loc) {
+    if (SNAP) { const c = snapFind(q, loc); if (!c) throw new SnapMiss(); return c; }
+    return this.get(`/api/compare?q=${encodeURIComponent(q)}&locale=${loc}&k=10`);
+  },
+  async product(id, loc) { if (SNAP) return SNAP.products?.[id] || null; return this.get(`/api/product/${encodeURIComponent(id)}?locale=${loc}`); },
+  async feedback(ev) {
+    if (SNAP) return { ok: true, local: true };
+    const r = await fetch("/api/feedback", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(ev) });
+    return r.json();
+  },
+  evalReport() { return SNAP ? Promise.resolve(SNAP.eval) : this.get("/api/eval"); },
+  models() { return SNAP ? Promise.resolve(SNAP.models) : this.get("/api/models"); },
+};
+
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(() => t.hidden = true, 2600); }
+function mc(m) { return `var(--m-${m})`; }
+function labelOf(m) { return state.health?.method_labels?.[m] || m; }
+
+// ------------------------------------------------------------------ product rendering helpers
+const CUR = { USD: "$", EUR: "€", JPY: "¥" };
+function price(p) {
+  if (p.price == null) return "";
+  const s = CUR[p.currency] || "";
+  const v = p.currency === "JPY" ? Math.round(p.price).toLocaleString("en-US") : Number(p.price).toFixed(2);
+  return p.currency === "EUR" ? `${v.replace(".", ",")} ${s}` : `${s}${v}`;
+}
+function stars(p) { return p.stars == null ? "" : `${Number(p.stars).toFixed(1)}★ <span class="muted">(${(p.n_ratings ?? 0).toLocaleString("en-US")})</span>`; }
+const dept = p => p.category && p.category !== "Unknown" ? p.category : null;
+function initials(p) { const d = dept(p) || p.brand || p.title || "?"; return d.split(/[\s,&]+/).filter(Boolean).slice(0, 2).map(w => w[0]).join("").toUpperCase(); }
+function thumb(p) {
+  const ph = `<span class="ph" aria-hidden="true">${esc(initials(p))}</span>`;
+  if (!p.image_url || SNAP) return `<div class="thumb">${ph}</div>`;
+  return `<div class="thumb"><img loading="lazy" alt="" src="${esc(p.image_url)}" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'ph',textContent:'${esc(initials(p))}'}))"></div>`;
+}
+function highlight(title, terms) {
+  let out = esc(title);
+  const ts = (terms || []).filter(t => t.length > 1 && /^[\p{L}\p{N}]+$/u.test(t)).sort((a, b) => b.length - a.length);
+  if (!ts.length) return out;
+  const re = new RegExp(`(${ts.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`, "giu");
+  return out.replace(re, "<mark>$1</mark>");
+}
+function labPill(l) { const k = l || "U"; return `<span class="lab ${k}" title="Human ESCI judgment for this query">${k === "U" ? "unjudged" : k}</span>`; }
+function attrChips(e) {
+  return (e?.attributes || []).map(a => {
+    const cls = a.status === "match" ? "good" : a.status === "conflict" ? "bad" : "unk";
+    const sym = a.status === "match" ? "✓" : a.status === "conflict" ? "✕" : "?";
+    const pv = a.status === "conflict" ? ` · product: ${esc(a.product.slice(0, 2).join(", "))}` : "";
+    return `<span class="pill ${cls}" title="${esc(a.label)}">${sym} ${esc(a.label)} ${esc(a.query.join(", "))}${pv}</span>`;
+  }).join("") + (e?.negation_violation ? `<span class="pill bad">✕ contains an excluded word</span>` : "");
+}
+
+function whyPanel(e, judged) {
+  if (!e) return "";
+  const rows = [];
+  const tt = e.matched_title_terms || [], xt = (e.matched_text_terms || []).filter(t => !tt.includes(t));
+  rows.push(`<div><b>Words found</b> — title: ${tt.length ? esc(tt.join(", ")) : "<span class='muted'>none</span>"}${xt.length ? `; description: ${esc(xt.join(", "))}` : ""}${e.semantic_only ? ` <span class="pill tag">found by meaning only</span>` : ""}</div>`);
+  if (e.semantic_similarity != null) rows.push(`<div><b>Semantic similarity</b> <span class="mono">${fmt(e.semantic_similarity)}</span><div class="bar"><i style="width:${Math.max(0, Math.min(1, e.semantic_similarity)) * 100}%"></i></div></div>`);
+  if (e.department_fit != null) rows.push(`<div><b>Department fits query</b> <span class="mono">${fmt(e.department_fit, 2)}</span></div>`);
+  if (e.result_type) rows.push(`<div><b>Predicted result type</b> — ${Object.entries(e.result_type.proba).map(([k, v]) => `${esc(k)} <span class="mono">${fmt(v, 2)}</span>`).join(" · ")}${judged ? ` · human label: <b>${esc(LABEL_NAME[judged])}</b>` : ""}</div>`);
+  if (e.ranker) {
+    const g = Object.entries(e.ranker.by_group);
+    const mx = Math.max(0.0001, ...g.map(([, v]) => Math.abs(v)));
+    rows.push(`<div><b>What moved it in the reranker</b> <span class="muted">(exact feature contributions, log-odds-like units)</span>
+      <div class="contrib" style="margin-top:6px">${g.map(([k, v]) => {
+        const w = Math.abs(v) / mx * 50, left = v >= 0 ? 50 : 50 - w;
+        return `<span>${esc(k)}</span><span class="track"><span class="mid"></span><i style="left:${left}%;width:${w}%;background:${v >= 0 ? "var(--good)" : "var(--bad)"}"></i></span><span class="mono" style="text-align:right">${v >= 0 ? "+" : ""}${fmt(v, 2)}</span>`;
+      }).join("")}</div>
+      <div class="muted" style="margin-top:6px">Top signals: ${e.ranker.top.map(t => `${esc(t.label)} (${t.contribution >= 0 ? "+" : ""}${fmt(t.contribution, 2)})`).join(", ")}</div></div>`);
+  }
+  return `<div class="why">${rows.join("")}</div>`;
+}
+
+function card(r, res) {
+  const e = r.explanation;
+  const type = e?.result_type ? `<span class="pill ${e.result_type.label === "E" ? "good" : e.result_type.label === "I" ? "bad" : "tag"}" title="Predicted by the E/S/C/I classifier">${esc(e.result_type.name)}</span>` : "";
+  const judged = res.judged_query_id != null ? labPill(r.judged_label) : "";
+  const fbk = `${res.query}|${r.doc_id}`;
+  return `<article class="card" data-doc="${esc(r.doc_id)}">
+    ${thumb(r)}
+    <div style="min-width:0">
+      <div class="top"><span class="rank">#${r.rank}</span>${type}${judged}${r.commerce_source === "simulated" ? `<span class="pill unk" title="Price and rating are simulated for this product">sim. price</span>` : ""}</div>
+      <h3><a href="#" data-open="${esc(r.doc_id)}" style="color:inherit;text-decoration:none">${highlight(r.title, e?.matched_title_terms)}</a></h3>
+      <div class="meta">${[r.brand, r.category_leaf || dept(r)].filter(Boolean).map(esc).join(" · ")}</div>
+      <div class="pricerow"><span class="price">${price(r)}</span><span class="stars">${stars(r)}</span>${r.in_stock === false ? `<span class="pill bad">out of stock</span>` : ""}</div>
+      <div class="checks">${attrChips(e)}</div>
+      <div class="actions">
+        <button data-why="${r.rank}">Why this result</button>
+        <button data-fb="click" data-doc="${esc(r.doc_id)}" data-pos="${r.rank}" aria-pressed="${state.fb[fbk] === "click"}">Open</button>
+        <button data-fb="cart" data-doc="${esc(r.doc_id)}" data-pos="${r.rank}" aria-pressed="${state.fb[fbk] === "cart"}">Add to cart</button>
+        <button data-fb="thumbs_up" data-doc="${esc(r.doc_id)}" data-pos="${r.rank}" aria-pressed="${state.fb[fbk] === "thumbs_up"}">Relevant</button>
+        <button data-fb="thumbs_down" data-doc="${esc(r.doc_id)}" data-pos="${r.rank}" aria-pressed="${state.fb[fbk] === "thumbs_down"}">Not relevant</button>
+      </div>
+      <div data-whybox="${r.rank}" hidden>${whyPanel(e, r.judged_label)}</div>
+    </div></article>`;
+}
+
+// ------------------------------------------------------------------ shop view
+function renderDial() {
+  const avail = state.health?.methods || [];
+  const all = ["bm25", "dense", "hybrid_rrf", "hybrid", "ltr", "ltr_fb"];
+  $("#dial").innerHTML = all.map(m => `<button role="radio" style="--mc:${mc(m)}" data-method="${m}" aria-checked="${m === state.method}" ${avail.includes(m) ? "" : "disabled title='Not available in this build'"}>
+     <span class="nm">${esc(labelOf(m))}</span><span class="ds">${esc(METHOD_DESC[m])}</span></button>`).join("");
+}
+
+function renderUnderstanding(u, res) {
+  if (!u) return;
+  const attrs = Object.entries(u.attributes || {}).flatMap(([k, v]) => v.map(x => `<span class="pill">${esc(k)}: ${esc(x)}</span>`));
+  if (u.pack_count) attrs.push(`<span class="pill">pack of ${u.pack_count}</span>`);
+  const brands = (u.brands || []).map(b => `<span class="pill tag">brand: ${esc(b)}</span>`);
+  const neg = (u.negated_terms || []).map(n => `<span class="pill bad">exclude: ${esc(n)}</span>`);
+  const depts = (u.departments || []).map(d => `<div class="deptrow"><span>${esc(d.name)}</span><span class="mono" style="text-align:right">${fmt(d.p, 2)}</span><div class="bar"><i style="width:${d.p * 100}%"></i></div></div>`).join("");
+  $("#understanding").innerHTML = `<h3>Query understanding</h3>
+    <div class="kv"><div class="row"><span class="muted">Normalised</span><span class="mono">${esc(u.normalized)}</span></div></div>
+    ${u.vague ? `<div class="notice">This query is vague: no single department is likely. A storefront would offer these as refinements.</div>` : ""}
+    <div><div class="eyebrow" style="margin-bottom:6px">Detected</div><div class="pills">${[...attrs, ...brands, ...neg].join("") || "<span class='muted'>No attributes, brands or exclusions.</span>"}</div></div>
+    ${depts ? `<div><div class="eyebrow" style="margin-bottom:6px">Likely departments</div><div style="display:grid;gap:8px">${depts}</div></div>` : ""}
+    <div class="kv"><div class="eyebrow">Served</div>
+      <div class="row"><span class="muted">Approach</span><span>${esc(labelOf(res.served_by))}</span></div>
+      <div class="row"><span class="muted">Candidates</span><span class="mono">${res.candidates ?? "–"}</span></div>
+      ${Object.entries(res.versions || {}).map(([k, v]) => `<div class="row"><span class="muted">${esc(k)}</span><span class="mono">${esc(v)}</span></div>`).join("")}
+    </div>`;
+}
+
+async function runSearch() {
+  const q = $("#q").value.trim(); if (!q) return;
+  state.q = q;
+  $("#results").innerHTML = `<div class="empty">Searching…</div>`;
+  try {
+    const res = await api.search(q, state.locale, state.method);
+    state.last = res;
+    const T = res.timings_ms || {};
+    $("#status").innerHTML = `<span><b>${res.results.length}</b> results</span>
+      <span>served by <b style="color:${mc(res.served_by)}">${esc(labelOf(res.served_by))}</b></span>
+      <span>engine <b class="mono">${fmt(res.engine_ms, 1)} ms</b> <span class="muted">(${Object.entries(T).map(([k, v]) => `${k} ${fmt(v, 1)}`).join(" · ")})</span></span>
+      ${res.cache?.hit ? `<span class="pill good">cache hit</span>` : ""}
+      ${res.fallback_reason ? `<span class="pill bad" title="Graceful degradation">fallback: ${esc(res.fallback_reason)}</span>` : ""}`;
+    const qq = res.quality;
+    $("#quality").innerHTML = qq ? `<div class="quality"><span><b>This is a judged ESCI query.</b> Labels are known only for its judged products; others show as unjudged.</span>
+      <span>condensed nDCG@10 <b class="mono">${qq.judged10 > 0 ? fmt(qq.ndcg10_cond) : "not assessable"}</b></span><span>judged@10 <b class="mono">${fmt(qq.judged10, 2)}</b></span>
+      <span>Exact found in top 10: <b class="mono">${qq.success10_e ? "yes" : "no"}</b></span></div>` : "";
+    $("#results").innerHTML = res.results.length ? res.results.map(r => card(r, res)).join("") : `<div class="empty">No results. ${state.method === "bm25" ? "Keyword search found no matching words; try the semantic or hybrid approach." : ""}</div>`;
+    renderUnderstanding(res.understanding, res);
+    renderRails(res);
+    if (!SNAP && res.results.length) res.results.slice(0, 10).forEach(r => api.feedback({ query: q, locale: state.locale, doc_id: r.doc_id, event: "impression", position: r.rank, method: state.method }).catch(() => {}));
+  } catch (err) {
+    if (err instanceof SnapMiss) {
+      $("#results").innerHTML = `<div class="empty">This snapshot holds ${Object.keys(SNAP.queries).length} precomputed queries. Pick one of the examples above, or run <span class="mono">csre serve</span> for live search over the whole catalog.</div>`;
+    } else $("#results").innerHTML = `<div class="empty">Search failed: ${esc(err.message)}</div>`;
+  }
+}
+
+async function renderRails(res) {
+  const subs = res.results.filter(r => r.explanation?.result_type?.label === "S").slice(0, 6);
+  let html = "";
+  if (subs.length) html += `<div class="rail"><div class="eyebrow" style="margin-bottom:8px">Close alternatives (predicted substitutes)</div><div class="strip">${subs.map(mini).join("")}</div></div>`;
+  $("#rails").innerHTML = html;
+  const top = res.results[0];
+  if (!top) return;
+  const p = await api.product(top.doc_id, state.locale).catch(() => null);
+  if (p && (p.complements?.length)) {
+    $("#rails").insertAdjacentHTML("beforeend", `<div class="rail"><div class="eyebrow" style="margin-bottom:8px">Pairs well with “${esc(top.title.slice(0, 50))}…”</div><div class="strip">${p.complements.slice(0, 8).map(mini).join("")}</div></div>`);
+  }
+}
+function mini(p) { return `<div class="mini">${thumb(p)}<span class="t">${esc(p.title)}</span><span class="price">${price(p)}</span></div>`; }
+
+// ------------------------------------------------------------------ product drawer
+async function openProduct(id) {
+  const d = $("#drawer"), s = $("#sheet");
+  d.hidden = false; s.innerHTML = `<div class="empty">Loading…</div>`;
+  const p = await api.product(id, state.locale).catch(() => null);
+  const base = p?.product || state.last?.results.find(r => r.doc_id === id);
+  if (!base) { s.innerHTML = `<button class="btn" data-close>Close</button><div class="empty">Product details are available in the live app.</div>`; return; }
+  s.innerHTML = `<div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><span class="eyebrow">${esc(dept(base) || "")}</span><button class="btn" data-close>Close</button></div>
+    <div style="display:grid;grid-template-columns:120px minmax(0,1fr);gap:14px">${thumb(base)}<div style="min-width:0"><h2 style="font-size:1.1rem">${esc(base.title)}</h2>
+      <div class="meta muted">${esc(base.brand || "")}</div><div class="pricerow"><span class="price">${price(base)}</span><span class="stars">${stars(base)}</span></div></div></div>
+    <div class="pills">${["measures", "sizes", "materials", "colors", "audience"].flatMap(k => (base["attr_" + k] || []).map(v => `<span class="pill">${k}: ${esc(v)}</span>`)).join("")}</div>
+    ${p ? `<div><div class="eyebrow" style="margin-bottom:8px">Substitutes</div>${p.substitutes.length ? `<div class="rail"><div class="strip">${p.substitutes.map(mini).join("")}</div></div>` : "<p class='muted'>None recorded for this product.</p>"}</div>
+    <div><div class="eyebrow" style="margin-bottom:8px">Complements</div>${p.complements.length ? `<div class="rail"><div class="strip">${p.complements.map(mini).join("")}</div></div>` : "<p class='muted'>None recorded for this product.</p>"}
+    ${p.complement_departments?.length ? `<p class="muted">Shoppers who search for this department often need: ${esc(p.complement_departments.join(", "))}.</p>` : ""}</div>
+    <p class="muted" style="font-size:.8rem">${esc(p.note)}</p>` : `<p class="muted">Substitutes and complements load in the live app.</p>`}`;
+}
+
+// ------------------------------------------------------------------ compare view
+async function runCompare() {
+  const q = $("#q").value.trim(); if (!q) { $("#cmp").innerHTML = `<div class="empty">Search for something first.</div>`; return; }
+  $("#cmpTitle").textContent = `“${q}”`;
+  $("#cmp").innerHTML = `<div class="empty">Running every approach…</div>`;
+  let c;
+  try { c = await api.compare(q, state.locale); } catch (err) {
+    $("#cmp").innerHTML = `<div class="empty">${err instanceof SnapMiss ? "This query is not in the snapshot. Pick an example above." : esc(err.message)}</div>`; return;
+  }
+  state.cmp = c;
+  const base = c.baseline;
+  const judgedQ = c.judged_query_id != null;
+  $("#cmpLegend").innerHTML = judgedQ ? `Human labels: ${["E", "S", "C", "I", "U"].map(k => `${labPill(k === "U" ? null : k)} ${LABEL_NAME[k]}`).join(" ")} · arrows: rank change vs ${esc(labelOf(base))}` : `Not a judged ESCI query: quality cannot be measured, only compared. Arrows: rank change vs ${esc(labelOf(base))}`;
+  const pts = c.methods.map(m => ({ m, ms: c.runs[m].engine_ms, q: c.runs[m].quality?.ndcg10_cond }));
+  $("#cmpSummary").innerHTML = judgedQ ? `<div class="figure" style="margin-bottom:14px"><div class="eyebrow">This query: quality vs response time</div>${scatter(pts.filter(p => p.q != null), { w: 760, h: 220, x: "engine time (ms, log scale)", y: "condensed nDCG@10" })}</div>` : "";
+  $("#cmp").innerHTML = c.methods.map(m => {
+    const r = c.runs[m];
+    return `<div class="col" style="--mc:${mc(m)}"><header><span class="nm">${esc(labelOf(m))}</span>
+      <span class="st"><span class="mono">${fmt(r.engine_ms, 1)} ms</span>${r.quality ? `<span>nDCG@10 <b class="mono">${fmt(r.quality.ndcg10_cond)}</b></span><span>judged ${fmt(r.quality.judged10, 1)}</span>` : ""}${r.served_by !== m ? `<span class="pill bad">served by ${esc(r.served_by)}</span>` : ""}</span></header>
+      ${r.results.map(x => {
+        const prev = m === base ? null : x.rank_in?.[base];
+        const mv = m === base ? "" : prev == null ? `<span class="mv new">new</span>` : prev > x.rank ? `<span class="mv up">▲${prev - x.rank}</span>` : prev < x.rank ? `<span class="mv down">▼${x.rank - prev}</span>` : `<span class="mv muted">=</span>`;
+        return `<div class="crow" data-doc="${esc(x.doc_id)}"><span class="r">${x.rank}</span>${thumb(x)}<div style="min-width:0"><div class="t" title="${esc(x.title)}">${esc(x.title)}</div><div class="sub">${judgedQ ? labPill(x.judged_label) : ""}${mv}${x.explanation?.semantic_only ? `<span class="pill tag" style="font-size:.66rem">meaning only</span>` : ""}</div></div></div>`;
+      }).join("")}</div>`;
+  }).join("");
+}
+
+// ------------------------------------------------------------------ charts (SVG, one scale per axis)
+function niceTicks(lo, hi, n = 5) {
+  const span = hi - lo, step0 = span / n, mag = 10 ** Math.floor(Math.log10(step0)), err = step0 / mag;
+  const step = (err >= 7.5 ? 10 : err >= 3.5 ? 5 : err >= 1.5 ? 2 : 1) * mag;
+  const out = []; for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(+v.toFixed(10)); return out;
+}
+function scatter(pts, o) {
+  if (!pts.length) return "<p class='muted'>No data.</p>";
+  const W = o.w, H = o.h, L = 56, R = 120, T = 14, B = 40;
+  const xs = pts.map(p => Math.max(0.01, p.ms)), ys = pts.map(p => p.q);
+  let x0 = Math.log10(Math.min(...xs) / 1.6), x1 = Math.log10(Math.max(...xs) * 1.6);
+  let y0 = Math.min(...ys), y1 = Math.max(...ys); const pad = Math.max(0.01, (y1 - y0) * 0.25); y0 -= pad; y1 += pad;
+  const X = v => L + (Math.log10(v) - x0) / (x1 - x0) * (W - L - R), Y = v => T + (1 - (v - y0) / (y1 - y0)) * (H - T - B);
+  const xt = []; for (let e = Math.floor(x0); e <= Math.ceil(x1); e++) for (const m of [1, 2, 5]) { const v = m * 10 ** e; if (Math.log10(v) >= x0 && Math.log10(v) <= x1) xt.push(v); }
+  const yt = niceTicks(y0, y1, 4);
+  return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Quality versus latency by ranking approach">
+    <g class="grid">${yt.map(v => `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}"/>`).join("")}${xt.map(v => `<line y1="${T}" y2="${H - B}" x1="${X(v)}" x2="${X(v)}"/>`).join("")}</g>
+    ${yt.map(v => `<text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end">${v.toFixed(3)}</text>`).join("")}
+    ${xt.map(v => `<text x="${X(v)}" y="${H - B + 16}" text-anchor="middle">${v >= 1 ? v : v.toFixed(2)}</text>`).join("")}
+    <text x="${(L + W - R) / 2}" y="${H - 4}" text-anchor="middle">${esc(o.x)}</text>
+    <text x="12" y="${(T + H - B) / 2}" text-anchor="middle" transform="rotate(-90 12 ${(T + H - B) / 2})">${esc(o.y)}</text>
+    ${pts.map(p => `<circle cx="${X(Math.max(0.01, p.ms))}" cy="${Y(p.q)}" r="6" style="fill:${mc(p.m)}"/><text class="lbl" x="${X(Math.max(0.01, p.ms)) + 9}" y="${Y(p.q) + 4}">${esc(labelOf(p.m))}</text>`).join("")}
+  </svg></div>`;
+}
+
+// ------------------------------------------------------------------ evaluation view
+async function renderEval() {
+  let r;
+  try { r = await api.evalReport(); } catch (e) { $("#evalBody").innerHTML = `<div class="empty">No evaluation report yet. Run <span class="mono">csre eval</span>.</div>`; return; }
+  if (!r) { $("#evalBody").innerHTML = `<div class="empty">No evaluation report in this snapshot.</div>`; return; }
+  const M = r.methods.filter(m => r.rerank?.overall?.[m]);
+  const rr = r.rerank?.overall || {}, rt = r.retrieval?.overall || {}, la = r.latency?.methods || {};
+  const best = M.reduce((a, m) => (rr[m]?.ndcg10?.mean ?? 0) > (rr[a]?.ndcg10?.mean ?? 0) ? m : a, M[0]);
+  const content = M.filter(m => m !== "ltr_fb").reduce((a, m) => (rr[m]?.ndcg10?.mean ?? 0) > (rr[a]?.ndcg10?.mean ?? 0) ? m : a, M[0]);
+  const d = r.rerank?.delta_vs_bm25?.[content];
+  const fast = la.bm25?.wall_ms?.p50, slow = la[content]?.wall_ms?.p50;
+  const callouts = `<div class="callouts">
+    <div class="callout"><span class="eyebrow">Best content-only approach</span><span class="v" style="color:${mc(content)}">${esc(labelOf(content))}</span><span class="d">rerank nDCG@10 ${fmt(rr[content]?.ndcg10?.mean)} vs BM25 ${fmt(rr.bm25?.ndcg10?.mean)}</span></div>
+    <div class="callout"><span class="eyebrow">Gain over keyword search</span><span class="v">${d ? (d.delta >= 0 ? "+" : "") + fmt(d.delta) : "–"}</span><span class="d">${d ? `95% CI ${fmt(d.lo)} to ${fmt(d.hi)} over ${d.n.toLocaleString("en-US")} test queries` : ""}</span></div>
+    <div class="callout"><span class="eyebrow">Price of that gain</span><span class="v">${fast && slow ? `${fmt(slow / fast, 1)}×` : "–"}</span><span class="d">p50 latency ${fmt(slow, 1)} ms vs ${fmt(fast, 1)} ms; $${fmt(la[content]?.cost?.usd_per_million, 3)} vs $${fmt(la.bm25?.cost?.usd_per_million, 3)} per 1M queries</span></div>
+    <div class="callout"><span class="eyebrow">Evaluated on</span><span class="v mono" style="font-size:1.3rem">${r.n_queries.toLocaleString("en-US")}</span><span class="d">held-out ${esc(r.split)} queries (${esc(r.corpus)} catalog), every approach under the same conditions</span></div>
+  </div>`;
+  const pts = M.filter(m => la[m]).map(m => ({ m, ms: la[m].wall_ms.p50, q: rr[m].ndcg10.mean }));
+  const ptsR = M.filter(m => la[m] && rt[m]).map(m => ({ m, ms: la[m].wall_ms.p50, q: rt[m].ndcg10_cond.mean }));
+  const table = `<div class="tbl-wrap"><table><thead><tr><th>Approach</th><th class="num">Rerank nDCG@10</th><th class="num">Δ vs BM25</th><th class="num">Retrieval nDCG@10</th><th class="num">judged@10</th><th class="num">Recall@100 Exact</th><th class="num">p50 ms</th><th class="num">p95 ms</th><th class="num">$ / 1M</th></tr></thead><tbody>
+    ${M.map(m => { const dd = r.rerank?.delta_vs_bm25?.[m]; return `<tr style="--mc:${mc(m)}"><td><span class="swatch"></span>${esc(labelOf(m))}</td>
+      <td class="num">${fmt(rr[m]?.ndcg10?.mean, 4)}</td><td class="num">${m === "bm25" || !dd ? "–" : `${dd.delta >= 0 ? "+" : ""}${fmt(dd.delta, 4)}${dd.lo > 0 || dd.hi < 0 ? " *" : ""}`}</td>
+      <td class="num">${fmt(rt[m]?.ndcg10_cond?.mean, 4)}</td><td class="num">${fmt(rt[m]?.judged10?.mean, 2)}</td><td class="num">${fmt(rt[m]?.recall100_e?.mean, 3)}</td>
+      <td class="num">${fmt(la[m]?.wall_ms?.p50, 1)}</td><td class="num">${fmt(la[m]?.wall_ms?.p95, 1)}</td><td class="num">${la[m] ? "$" + fmt(la[m].cost.usd_per_million, 3) : "–"}</td></tr>`; }).join("")}
+    </tbody></table></div><p>* 95% paired-bootstrap interval excludes zero. Retrieval nDCG is condensed: products not judged for a query are unknown, so they are skipped rather than counted as wrong; judged@10 shows how much of each page could be assessed.</p>`;
+  const sl = r.rerank?.by?.slice || {};
+  const slices = Object.keys(sl);
+  const heat = `<div class="tbl-wrap"><table class="heat"><thead><tr><th>Slice</th><th class="num">queries</th>${M.map(m => `<th class="num" style="--mc:${mc(m)}"><span class="swatch"></span>${esc(labelOf(m))}</th>`).join("")}</tr></thead><tbody>
+    ${[...Object.entries(r.rerank?.by?.locale || {}).map(([k, v]) => ["market " + k, v]), ...slices.map(s => [s.replace(/_/g, " "), sl[s]]), ...Object.entries(r.rerank?.by?.traffic_bucket || {}).map(([k, v]) => ["traffic " + k, v])].map(([name, v]) => {
+      const b = v.bm25?.mean;
+      return `<tr><td>${esc(name)}</td><td class="num">${(Math.max(...Object.values(v).map(x => x.n))).toLocaleString("en-US")}</td>${M.map(m => {
+        const x = v[m]?.mean; if (x == null) return `<td class="cell">–</td>`;
+        const dd = b == null ? 0 : x - b, a = Math.min(1, Math.abs(dd) / 0.06);
+        const bg = m === "bm25" ? "transparent" : `color-mix(in srgb, ${dd >= 0 ? "var(--good)" : "var(--bad)"} ${Math.round(a * 35)}%, transparent)`;
+        return `<td class="cell" style="background:${bg}">${fmt(x)}</td>`; }).join("")}</tr>`; }).join("")}
+    </tbody></table></div><p>Cells are shaded by the difference from BM25 on the same queries (green better, orange worse). The feedback-aware ranker uses simulated clicks generated from the same labels, so its gains on head and torso queries are simulator-dependent and are reported separately.</p>`;
+  let robust = "";
+  if (r.robustness) {
+    const tab = {}; r.robustness.table.forEach(x => { (tab[x.variant] ||= {})[x.method] ||= {}; tab[x.variant][x.method][x.text] = x.ndcg10_cond; });
+    robust = `<div class="figure"><div class="eyebrow">Robustness: one-off query variants from the replay stream</div><div class="tbl-wrap"><table><thead><tr><th>Variant</th>${M.map(m => `<th class="num" style="--mc:${mc(m)}"><span class="swatch"></span>${esc(labelOf(m))}</th>`).join("")}</tr></thead><tbody>
+      ${Object.entries(tab).map(([v, ms]) => `<tr><td>${esc(v.replace("_", " "))}</td>${M.map(m => { const x = ms[m]; if (!x) return "<td class='num'>–</td>"; const dd = x.variant - x.original; return `<td class="num" style="color:${dd < -0.02 ? "var(--bad)" : "inherit"}">${dd >= 0 ? "+" : ""}${fmt(dd)}</td>`; }).join("")}</tr>`).join("")}
+      </tbody></table></div><p>Change in condensed nDCG@10 when the shopper types a variant (typo, dropped or reordered word, extra modifier, case or spacing) instead of the original query, scored against the original query's labels.</p></div>`;
+  }
+  $("#evalBody").className = "";
+  $("#evalBody").innerHTML = `<div class="eyebrow">Offline evaluation · ${esc(r.created_at || "")}</div><h2 style="margin-bottom:14px">Where each approach wins, and what it costs</h2>
+    ${callouts}
+    <div class="grid2" style="margin-bottom:16px">
+      <div class="figure"><div class="eyebrow">Ranking judged candidates (ESCI task 1)</div>${scatter(pts, { w: 560, h: 280, x: "p50 latency per query (ms, log scale)", y: "nDCG@10" })}<p>Each approach ranks every product a query was judged on, so quality is exact. Latency is the full-catalog request, single-threaded.</p></div>
+      <div class="figure"><div class="eyebrow">Full-catalog retrieval</div>${scatter(ptsR, { w: 560, h: 280, x: "p50 latency per query (ms, log scale)", y: "condensed nDCG@10" })}<p>Ranking the whole catalog. Unjudged products are unknown, not irrelevant.</p></div>
+    </div>
+    <div class="figure" style="margin-bottom:16px"><div class="eyebrow">All approaches, same test queries</div>${table}</div>
+    <div class="figure" style="margin-bottom:16px"><div class="eyebrow">Rerank nDCG@10 by query slice</div>${heat}</div>
+    ${robust}
+    <div class="figure" style="margin-top:16px"><div class="eyebrow">Reading these numbers</div><ul class="prose">
+      <li>These are offline relevance results on human judgments. They do not show conversion impact; a live pilot would measure search success and engagement.</li>
+      <li>Latency and cost come from one CPU thread on this build's hardware with an assumed instance price (${esc(r.latency?.cost_assumptions?.instance || "")}, $${r.latency?.cost_assumptions?.usd_per_hour ?? ""}/h).</li>
+      <li>Product prices and ratings come from real product pages (ESCI-S) where available and are simulated otherwise; clicks and purchases are always simulated.</li></ul></div>`;
+}
+
+// ------------------------------------------------------------------ system view
+async function renderSystem() {
+  const [h, reg] = await Promise.all([api.health(), api.models().catch(() => ({}))]);
+  const rows = Object.entries(reg || {}).map(([name, e]) => {
+    const prod = e.aliases?.production; const v = e.versions?.[prod] || {}; const mt = v.metrics || {};
+    const key = Object.entries(mt).filter(([k, x]) => typeof x === "number").slice(0, 3).map(([k, x]) => `${k} ${fmt(x, 4)}`).join(" · ");
+    return `<tr><td>${esc(name)}</td><td class="mono">${esc(prod || "–")}</td><td class="num">${Object.keys(e.versions || {}).length}</td><td>${esc(v.created_at || "")}</td><td class="mono">${esc(v.git_commit || "")}</td><td>${esc(key)}</td></tr>`;
+  }).join("");
+  const imp = reg?.ltr?.versions?.[reg.ltr.aliases.production]?.metrics?.importance_by_group;
+  const impFb = reg?.ltr_fb?.versions?.[reg.ltr_fb.aliases.production]?.metrics?.importance_by_group;
+  const impBars = (o, title) => !o ? "" : `<div class="figure"><div class="eyebrow">${title}</div>${Object.entries(o).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<div class="deptrow"><span>${esc(k)}</span><span class="mono" style="text-align:right">${fmt(v * 100, 1)}%</span><div class="bar"><i style="width:${v * 100}%"></i></div></div>`).join("")}<p>Share of total split gain by feature group.</p></div>`;
+  const st = h.stats || {};
+  $("#sysBody").className = "";
+  $("#sysBody").innerHTML = `<div class="eyebrow">Serving</div><h2 style="margin-bottom:14px">Versions, caching and fallbacks</h2>
+    <div class="callouts">
+      <div class="callout"><span class="eyebrow">Catalog</span><span class="v mono" style="font-size:1.3rem">${Object.values(h.n_products || {}).reduce((a, b) => a + b, 0).toLocaleString("en-US")}</span><span class="d">products · ${esc(h.corpus)} corpus · markets ${esc((h.locales || []).join(", "))}</span></div>
+      <div class="callout"><span class="eyebrow">Result cache</span><span class="v mono" style="font-size:1.3rem">${st.cache?.hit_rate == null ? "–" : fmt(st.cache.hit_rate * 100, 1) + "%"}</span><span class="d">${st.cache ? `${st.cache.entries} entries · ${st.cache.hits} hits · keyed by normalised query + model versions` : "live app only"}</span></div>
+      <div class="callout"><span class="eyebrow">Latency budget</span><span class="v mono" style="font-size:1.3rem">${h.latency_budget_ms ?? "–"} ms</span><span class="d">over budget, the request degrades: reranker → hybrid → keyword</span></div>
+      <div class="callout"><span class="eyebrow">Feedback events</span><span class="v mono" style="font-size:1.3rem">${st.feedback_events ?? 0}</span><span class="d">logged this session; they update the feedback-aware ranker immediately</span></div>
+    </div>
+    <div class="figure" style="margin-bottom:16px"><div class="eyebrow">Model registry (production aliases)</div><div class="tbl-wrap"><table><thead><tr><th>Model</th><th>Version</th><th class="num">versions</th><th>Trained</th><th>Commit</th><th>Key metrics</th></tr></thead><tbody>${rows || "<tr><td colspan='6'>No models registered.</td></tr>"}</tbody></table></div><p>Each response reports the versions that produced it, and cache keys include them, so promoting or rolling back a model never serves stale results.</p></div>
+    <div class="grid2">${impBars(imp, "Reranker (content): what it relies on")}${impBars(impFb, "Reranker + feedback: what it relies on")}</div>`;
+}
+
+// ------------------------------------------------------------------ wiring
+function setTab(t) {
+  state.tab = t;
+  document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === t));
+  ["shop", "compare", "eval", "system"].forEach(x => $("#v-" + x).hidden = x !== t);
+  if (t === "compare") runCompare();
+  if (t === "eval") renderEval();
+  if (t === "system") renderSystem();
+  try { localStorage.setItem("csre.tab", t); } catch (e) {}
+}
+async function renderExamples() {
+  const ex = await api.examples(state.locale).catch(() => ({}));
+  $("#examples").innerHTML = Object.entries(ex).map(([k, qs]) => `<div class="grp"><span class="eyebrow">${esc(k)}</span>${qs.map(q => `<button class="chip" data-q="${esc(q)}">${esc(q)}</button>`).join("")}</div>`).join("");
+  return ex;
+}
+
+document.addEventListener("click", async ev => {
+  const t = ev.target.closest("button, a");
+  if (!t) { if (ev.target === $("#drawer")) $("#drawer").hidden = true; return; }
+  if (t.dataset.tab) setTab(t.dataset.tab);
+  else if (t.dataset.method) { state.method = t.dataset.method; renderDial(); if (state.q) runSearch(); }
+  else if (t.dataset.q) { $("#q").value = t.dataset.q; state.tab === "compare" ? runCompare() : runSearch(); }
+  else if (t.dataset.why) { const b = $(`[data-whybox="${t.dataset.why}"]`); b.hidden = !b.hidden; t.setAttribute("aria-pressed", !b.hidden); }
+  else if (t.dataset.fb) {
+    const fbk = `${state.q}|${t.dataset.doc}`; state.fb[fbk] = t.dataset.fb;
+    t.closest(".actions").querySelectorAll("[data-fb]").forEach(b => b.setAttribute("aria-pressed", b === t));
+    const r = await api.feedback({ query: state.q, locale: state.locale, doc_id: t.dataset.doc, event: t.dataset.fb, position: +t.dataset.pos, method: state.method });
+    toast(r.local ? "Noted on this page. In the live app this updates the feedback-aware ranker." : `Feedback logged · the feedback-aware ranker will use it on the next search${r.invalidated_cache_entries ? " (cache refreshed)" : ""}`);
+    if (t.dataset.fb === "click") openProduct(t.dataset.doc);
+  }
+  else if (t.dataset.open) { ev.preventDefault(); openProduct(t.dataset.open); }
+  else if (t.hasAttribute("data-close")) $("#drawer").hidden = true;
+});
+document.addEventListener("keydown", e => { if (e.key === "Escape") $("#drawer").hidden = true; });
+document.addEventListener("mouseover", e => {
+  const row = e.target.closest(".crow"); document.querySelectorAll(".crow.hl").forEach(x => x.classList.remove("hl"));
+  if (row) document.querySelectorAll(`.crow[data-doc="${CSS.escape(row.dataset.doc)}"]`).forEach(x => x.classList.add("hl"));
+});
+$("#searchForm").addEventListener("submit", e => { e.preventDefault(); state.tab === "compare" ? runCompare() : runSearch(); });
+$("#locale").addEventListener("change", async e => { state.locale = e.target.value; const ex = await renderExamples(); const first = Object.values(ex)[0]?.[0]; if (first) { $("#q").value = first; runSearch(); } });
+
+(async function init() {
+  const h = await api.health();
+  state.health = h;
+  state.method = h.default_method && h.methods.includes(h.default_method) ? h.default_method : h.methods[h.methods.length - 1];
+  $("#modeTag").textContent = SNAP ? `Snapshot · ${Object.keys(SNAP.queries).length} queries` : `Live · ${h.corpus}`;
+  $("#corpusTag").textContent = `${Object.values(h.n_products).reduce((a, b) => a + b, 0).toLocaleString("en-US")} products · ESCI`;
+  $("#locale").innerHTML = h.locales.map(l => `<option value="${l}">${{ us: "US · English", es: "ES · Español", jp: "JP · 日本語" }[l] || l}</option>`).join("");
+  $("#locale").value = state.locale = h.locales.includes("us") ? "us" : h.locales[0];
+  renderDial();
+  const ex = await renderExamples();
+  const first = SNAP?.default_query || Object.values(ex)[0]?.[0];
+  if (first) { $("#q").value = first; await runSearch(); }
+  let saved = null; try { saved = localStorage.getItem("csre.tab"); } catch (e) {}
+  const hash = (location.hash || "").slice(1);
+  const tab = ["shop", "compare", "eval", "system"].includes(hash) ? hash : saved;
+  if (tab && tab !== "shop") setTab(tab);
+})();
+})();
+</script>
